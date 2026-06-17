@@ -18,3 +18,9 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+use App\Http\Controllers\DentistController;
+
+Route::get('/dentists', [DentistController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dentists.index');

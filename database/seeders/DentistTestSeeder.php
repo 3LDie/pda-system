@@ -10,7 +10,6 @@ class DentistTestSeeder extends Seeder
 {
     public function run(): void
     {
-        // 1. Seed Dr. Juan dela Cruz
         $dentist1 = DentistProfile::create([
             'full_name' => 'Dr. Juan dela Cruz',
             'prc_no' => '0012345',
@@ -27,7 +26,6 @@ class DentistTestSeeder extends Seeder
             ['membership_year' => '1991-92', 'status' => 'Active'],
         ]);
 
-        // 2. Seed Dr. Maria Santos
         $dentist2 = DentistProfile::create([
             'full_name' => 'Dr. Maria Clara Santos',
             'prc_no' => '0056789',
@@ -43,7 +41,6 @@ class DentistTestSeeder extends Seeder
             ['membership_year' => '2025-26', 'status' => 'Pending'],
         ]);
 
-        // 3. Seed Dr. Alan Turing
         $dentist3 = DentistProfile::create([
             'full_name' => 'Dr. Alan Alcantara',
             'prc_no' => '0098765',
