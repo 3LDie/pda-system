@@ -22,7 +22,6 @@
             },
             @endforeach
         ],
-        // Helper function to check if the dentist matches the search terms
         matches(dentist) {
             if (!this.search) return true;
             const term = this.search.toLowerCase();
@@ -32,6 +31,19 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-100 pb-4 mb-6 gap-4">
+                    <div>
+                        <h3 class="text-lg font-medium text-gray-900">Registry Records</h3>
+                        <p class="text-sm text-gray-500">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
+                    </div>
+                    <div>
+                        <a href="{{ route('dentists.create') }}" 
+                           class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
+                            ➕ Register New Dentist
+                        </a>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <input type="text" 
                            x-model="search" 
