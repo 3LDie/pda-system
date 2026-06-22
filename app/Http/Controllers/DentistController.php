@@ -10,29 +10,44 @@ use Exception;
 
 class DentistController extends Controller
 {
+    /**
+     * Display the dentist directory registry list.
+     */
     public function index(Request $request)
-{
-    // 1. Fetch all dentists along with their latest logged membership status
-    $query = DentistProfile::with(['memberships' => function($query) {
-        $query->orderBy('membership_year_bracket', 'desc');
-    }]);
+    {
+        // 1. Fetch all dentists along with their latest logged membership status
+        $query = DentistProfile::with(['memberships' => function($query) {
+            $query->orderBy('membership_year', 'desc'); // Fixed column name from error
+        }]);
 
-    // 2. Add backend support for the search bar (if a query is provided)
-    if ($request->has('search') && !empty($request->search)) {
-        $searchTerm = $request->search;
-        $query->where(function($q) use ($searchTerm) {
-            $q->where('full_name', 'LIKE', "%{$searchTerm}%")
-              ->orWhere('prc_no', 'LIKE', "%{$searchTerm}%");
-        });
+        // 2. Add backend support for the search bar filtering
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('full_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('prc_no', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        // 3. Get records ordered by latest creation
+        $dentists = $query->latest()->get();
+
+        // 4. Pass the collections straight into your blade view
+        return view('dentists.index', compact('dentists'));
     }
 
-    // 3. Get records (or apply pagination if the dataset scales up later)
-    $dentists = $query->latest()->get();
+    /**
+     * Show the form for registering a new dentist.
+     */
+    public function create()
+    {
+        // Added missing method to resolve Call to Undefined Method error
+        return view('dentists.create');
+    }
 
-    // 4. Pass the collections straight into your blade view
-    return view('dentists.index', compact('dentists'));
-}
-
+    /**
+     * Store a newly created dentist profile and membership log in storage.
+     */
     public function store(Request $request)
     {
         // 1. Enforce strict data rules (Stops massive inputs and duplicates)
