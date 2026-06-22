@@ -3,64 +3,84 @@
 namespace App\Http\Controllers;
 
 use App\Models\DentistProfile;
-use App\Models\PdaMembership; // Added this line
+use App\Models\PdaMembership;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; // Added this line
+use Illuminate\Support\Facades\DB;
+use Exception;
 
 class DentistController extends Controller
 {
-    public function index()
-    {
-        // Fetch all dentists from the database along with their membership history
-        $dentists = DentistProfile::with('memberships')->get();
+    public function index(Request $request)
+{
+    // 1. Fetch all dentists along with their latest logged membership status
+    $query = DentistProfile::with(['memberships' => function($query) {
+        $query->orderBy('membership_year_bracket', 'desc');
+    }]);
 
-        // Pass the data to the frontend view file
-        return view('dentists.index', compact('dentists'));
+    // 2. Add backend support for the search bar (if a query is provided)
+    if ($request->has('search') && !empty($request->search)) {
+        $searchTerm = $request->search;
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('full_name', 'LIKE', "%{$searchTerm}%")
+              ->orWhere('prc_no', 'LIKE', "%{$searchTerm}%");
+        });
     }
 
-    // 1. Display the creation form view
-    public function create()
-    {
-        return view('dentists.create');
-    }
+    // 3. Get records (or apply pagination if the dataset scales up later)
+    $dentists = $query->latest()->get();
 
-    // 2. Handle the incoming form data submission
+    // 4. Pass the collections straight into your blade view
+    return view('dentists.index', compact('dentists'));
+}
+
     public function store(Request $request)
     {
-        // Validate the incoming inputs strictly
+        // 1. Enforce strict data rules (Stops massive inputs and duplicates)
         $validated = $request->validate([
-            'full_name' => 'required|string|max:255',
-            'prc_no' => 'required|string|unique:dentist_profiles,prc_no|max:50',
-            'date_of_birth' => 'required|date',
-            'home_address' => 'required|string',
-            'clinic_address' => 'required|string',
-            'email_address' => 'required|email|unique:dentist_profiles,email_address|max:255',
-            'contact_no' => 'required|string|max:20',
-            'membership_year' => 'required|string|max:10',
-            'status' => 'required|string|in:Active,Pending',
+            'full_name'        => 'required|string|max:255',
+            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
+            'date_of_birth'    => 'required|date|before:today',
+            'contact_no'       => 'required|string|max:20',
+            'email_address'    => 'required|email|max:255',
+            'home_address'     => 'required|string',
+            'clinic_address'   => 'required|string',
+            'membership_year'  => 'required|integer|min:1900|max:' . date('Y'),
+            'payment_status'   => 'required|string|in:Active (Paid),Inactive (Unpaid)',
         ]);
 
-        // Use a Database Transaction to guarantee both records save together, or neither does
-        DB::transaction(function () use ($validated) {
-            // Create the primary dentist profile row
+        // 2. Transactional Database Safety Net
+        DB::beginTransaction();
+
+        try {
+            // Step A: Save the Core Profile
             $dentist = DentistProfile::create([
-                'full_name' => $validated['full_name'],
-                'prc_no' => $validated['prc_no'],
-                'date_of_birth' => $validated['date_of_birth'],
-                'home_address' => $validated['home_address'],
+                'full_name'      => $validated['full_name'],
+                'prc_no'         => $validated['prc_no'],
+                'date_of_birth'  => $validated['date_of_birth'],
+                'contact_no'     => $validated['contact_no'],
+                'email_address'  => $validated['email_address'],
+                'home_address'   => $validated['home_address'],
                 'clinic_address' => $validated['clinic_address'],
-                'email_address' => $validated['email_address'],
-                'contact_no' => $validated['contact_no'],
             ]);
 
-            // Create the linked membership row using the new dentist ID
+            // Step B: Link the Initial Membership Log
             $dentist->memberships()->create([
-                'membership_year' => $validated['membership_year'],
-                'status' => $validated['status'],
+                'membership_year_bracket' => $validated['membership_year'],
+                'payment_status'          => $validated['payment_status'],
             ]);
-        });
 
-        // Send them back to our directory with a success alert banner
-        return redirect()->route('dentists.index')->with('success', 'Dentist successfully registered!');
+            // Commit changes if everything succeeded
+            DB::commit();
+
+            return redirect()->route('dentists.index')
+                             ->with('success', 'Dentist record successfully registered!');
+
+        } catch (Exception $e) {
+            // Roll back the entire operation if anything crashes midway
+            DB::rollBack();
+
+            return back()->withInput()
+                         ->withErrors(['error' => 'Database failure: Could not register record.']);
+        }
     }
 }
