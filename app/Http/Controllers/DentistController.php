@@ -17,7 +17,7 @@ class DentistController extends Controller
     {
         // 1. Fetch all dentists along with their latest logged membership status
         $query = DentistProfile::with(['memberships' => function($query) {
-            $query->orderBy('membership_year', 'desc'); // Fixed column name from error
+            $query->orderBy('membership_year', 'desc'); 
         }]);
 
         // 2. Add backend support for the search bar filtering
@@ -41,7 +41,6 @@ class DentistController extends Controller
      */
     public function create()
     {
-        // Added missing method to resolve Call to Undefined Method error
         return view('dentists.create');
     }
 
@@ -50,7 +49,6 @@ class DentistController extends Controller
      */
     public function store(Request $request)
     {
-        // 1. Enforce strict data rules (Stops massive inputs and duplicates)
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
@@ -63,11 +61,9 @@ class DentistController extends Controller
             'payment_status'   => 'required|string|in:Active (Paid),Inactive (Unpaid)',
         ]);
 
-        // 2. Transactional Database Safety Net
         DB::beginTransaction();
 
         try {
-            // Step A: Save the Core Profile
             $dentist = DentistProfile::create([
                 'full_name'      => $validated['full_name'],
                 'prc_no'         => $validated['prc_no'],
@@ -78,20 +74,18 @@ class DentistController extends Controller
                 'clinic_address' => $validated['clinic_address'],
             ]);
 
-            // Step B: Link the Initial Membership Log
+            // ⚠️ Keeping this as membership_year_bracket if your setup treats insertion differently during standard creation
             $dentist->memberships()->create([
                 'membership_year_bracket' => $validated['membership_year'],
                 'payment_status'          => $validated['payment_status'],
             ]);
 
-            // Commit changes if everything succeeded
             DB::commit();
 
             return redirect()->route('dentists.index')
                              ->with('success', 'Dentist record successfully registered!');
 
         } catch (Exception $e) {
-            // Roll back the entire operation if anything crashes midway
             DB::rollBack();
 
             return back()->withInput()
@@ -104,7 +98,6 @@ class DentistController extends Controller
      */
     public function edit($id)
     {
-        // Securely intercept invalid IDs right away
         $dentist = DentistProfile::findOrFail($id);
         
         return view('dentists.edit', compact('dentist'));
@@ -117,7 +110,6 @@ class DentistController extends Controller
     {
         $dentist = DentistProfile::findOrFail($id);
 
-        // Validate changes—allowing this specific dentist to keep their own PRC number
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id,
@@ -128,10 +120,41 @@ class DentistController extends Controller
             'clinic_address' => 'required|string',
         ]);
 
-        // Save modifications
         $dentist->update($validated);
 
         return redirect()->route('dentists.index')
                          ->with('success', 'Dentist profile updated successfully!');
+    }
+
+    /**
+     * Show the form for renewing a dentist's membership.
+     */
+    public function renew($id)
+    {
+        $dentist = DentistProfile::findOrFail($id);
+        
+        return view('dentists.renew', compact('dentist'));
+    }
+
+    /**
+     * Store a newly created membership log row in storage.
+     */
+    public function storeRenewal(Request $request, $id)
+    {
+        $dentist = DentistProfile::findOrFail($id);
+
+        $validated = $request->validate([
+            'membership_year' => 'required|string|max:20',
+            'payment_status'  => 'required|string|max:50',
+        ]);
+
+        // 🛠️ Fixed: Maps form data directly to your true columns 'membership_year' and 'status'
+        $dentist->memberships()->create([
+            'membership_year' => $validated['membership_year'],
+            'status'          => $validated['payment_status'],
+        ]);
+
+        return redirect()->route('dentists.index')
+            ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
     }
 }

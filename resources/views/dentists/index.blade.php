@@ -83,6 +83,10 @@
                                         </template>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                                        <a :href="'/dentists/' + dentist.id + '/renew'" 
+                                           class="text-green-600 hover:text-green-900 transition font-semibold bg-green-50 px-3 py-1.5 rounded-md mr-2">
+                                            🔄 Renew
+                                        </a>
                                         <a :href="'/dentists/' + dentist.id + '/edit'" 
                                            class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md">
                                             ✏️ Edit
