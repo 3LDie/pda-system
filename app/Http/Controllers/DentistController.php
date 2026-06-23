@@ -98,4 +98,40 @@ class DentistController extends Controller
                          ->withErrors(['error' => 'Database failure: Could not register record.']);
         }
     }
+
+    /**
+     * Show the form for editing an existing dentist profile.
+     */
+    public function edit($id)
+    {
+        // Securely intercept invalid IDs right away
+        $dentist = DentistProfile::findOrFail($id);
+        
+        return view('dentists.edit', compact('dentist'));
+    }
+
+    /**
+     * Update the specified dentist profile in storage.
+     */
+    public function update(Request $request, $id)
+    {
+        $dentist = DentistProfile::findOrFail($id);
+
+        // Validate changes—allowing this specific dentist to keep their own PRC number
+        $validated = $request->validate([
+            'full_name'      => 'required|string|max:255',
+            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id,
+            'date_of_birth'  => 'required|date|before:today',
+            'contact_no'     => 'required|string|max:20',
+            'email_address'  => 'required|email|max:255',
+            'home_address'   => 'required|string',
+            'clinic_address' => 'required|string',
+        ]);
+
+        // Save modifications
+        $dentist->update($validated);
+
+        return redirect()->route('dentists.index')
+                         ->with('success', 'Dentist profile updated successfully!');
+    }
 }

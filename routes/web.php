@@ -1,7 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\DentistController; // Moved up to the top imports section
+use App\Http\Controllers\DentistController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -23,6 +23,8 @@ Route::middleware('auth')->group(function () {
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
     Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
     Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
+    Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
+    Route::put('/dentists/{id}', [DentistController::class, 'update'])->name('dentists.update');
 });
 
 require __DIR__.'/auth.php';
