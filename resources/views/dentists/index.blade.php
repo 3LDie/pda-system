@@ -10,13 +10,14 @@
         dentists: [
             @foreach($dentists as $dentist)
             {
+                id: '{{ $dentist->id }}', // 🆕 Injected the database ID so Alpine can generate dynamic URLs
                 name: '{{ addslashes($dentist->full_name) }}',
                 prc: '{{ $dentist->prc_no }}',
                 contact: '{{ $dentist->contact_no }}',
                 clinic: '{{ addslashes($dentist->clinic_address) }}',
                 memberships: [
                     @foreach($dentist->memberships as $membership)
-                    { year: '{{ $membership->membership_year }}', status: '{{ $membership->status }}' },
+                    { year: '{{ $membership->membership_year }}', status: '{{ $membership->payment_status }}' }, // 💡 Verified column matching 'payment_status'
                     @endforeach
                 ]
             },
@@ -39,7 +40,7 @@
                     <div>
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
-                            ➕ Register New Dentist
+                           ➕ Register New Dentist
                         </a>
                     </div>
                 </div>
@@ -60,7 +61,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact No.</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clinic Address</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership Years Logged</th>
-                            </tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Actions</th> </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
                             <template x-for="dentist in dentists">
@@ -71,11 +72,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="dentist.clinic"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <template x-for="membership in dentist.memberships">
-                                            <span :class="membership.status === 'Active' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
+                                            <span :class="membership.status === 'Active (Paid)' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1">
                                                 <span x-text="membership.year + ' (' + membership.status + ')'"></span>
                                             </span>
                                         </template>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
+                                        <a :href="'/dentists/' + dentist.id + '/edit'" 
+                                           class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md">
+                                            ✏️ Edit
+                                        </a>
                                     </td>
                                 </tr>
                             </template>
