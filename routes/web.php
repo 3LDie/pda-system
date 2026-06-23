@@ -25,6 +25,10 @@ Route::middleware('auth')->group(function () {
     Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
     Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
     Route::put('/dentists/{id}', [DentistController::class, 'update'])->name('dentists.update');
+    // PDA Dentist Membership Renewal Routes
+    Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
+    Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
+    Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
 });
 
 require __DIR__.'/auth.php';

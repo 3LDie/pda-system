@@ -178,4 +178,62 @@ class DentistController extends Controller
         return redirect()->route('dentists.index')
             ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
     }
+    /**
+     * Export the filtered dentist registry to a CSV spreadsheet.
+     */
+    public function export(Request $request)
+    {
+        // 1. Re-use your index search logic so if they searched for something, only those results export!
+        $query = DentistProfile::with(['memberships' => function($q) {
+            $q->orderBy('membership_year', 'desc');
+        }]);
+
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('full_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('prc_no', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        $dentists = $query->latest()->get();
+
+        // 2. Define the download headers for a CSV file stream
+        $fileName = 'pda_dentist_export_' . date('Y-m-d') . '.csv';
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate, post-check=0, pre-check=0",
+            "Expires"             => "0"
+        ];
+
+        // 3. Stream the raw database values straight to the browser link buffer
+        $callback = function() use ($dentists) {
+            $file = fopen('php://output', 'w');
+            
+            // Insert spreadsheet column headers
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Address', 'Clinic Address', 'Latest Membership Status']);
+
+            foreach ($dentists as $dentist) {
+                $latestMembership = $dentist->memberships->first();
+                $statusString = $latestMembership 
+                    ? $latestMembership->membership_year . ' (' . $latestMembership->status . ')'
+                    : 'No Logs';
+
+                fputcsv($file, [
+                    $dentist->full_name,
+                    $dentist->prc_no,
+                    $dentist->contact_no,
+                    $dentist->email_address,
+                    $dentist->clinic_address,
+                    $statusString
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 }

@@ -40,7 +40,11 @@
                         <h3 class="text-lg font-medium text-gray-900">Registry Records</h3>
                         <p class="text-sm text-gray-500">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
-                    <div>
+                    <div class="flex items-center space-x-3 gap-2">
+                        <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
+                           class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition">
+                           📥 Export Roster (CSV)
+                        </a>
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
                            ➕ Register New Dentist
