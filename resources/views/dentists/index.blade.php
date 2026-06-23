@@ -48,6 +48,40 @@
                     </div>
                 </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Directory</p>
+                            <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ $stats['total_dentists'] }}</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-xl">👥</div>
+                    </div>
+
+                    <div class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Active This Year</p>
+                            <h4 class="text-2xl font-bold text-emerald-900 mt-1">{{ $stats['active_members'] }}</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-xl">✅</div>
+                    </div>
+
+                    <div class="bg-amber-50/50 border border-amber-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Pending Logs</p>
+                            <h4 class="text-2xl font-bold text-amber-900 mt-1">{{ $stats['pending_members'] }}</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-xl">⏳</div>
+                    </div>
+
+                    <div class="bg-rose-50/50 border border-rose-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Inactive/Delinquent</p>
+                            <h4 class="text-2xl font-bold text-rose-900 mt-1">{{ $stats['inactive_members'] }}</h4>
+                        </div>
+                        <div class="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center text-xl">🚨</div>
+                    </div>
+                </div>
+
                 <div class="mb-6">
                     <input type="text" 
                            x-model="search" 

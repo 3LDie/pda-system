@@ -11,7 +11,7 @@ use Exception;
 class DentistController extends Controller
 {
     /**
-     * Display the dentist directory registry list.
+     * Display the dentist directory registry list with analytics.
      */
     public function index(Request $request)
     {
@@ -32,8 +32,29 @@ class DentistController extends Controller
         // 3. Get records ordered by latest creation
         $dentists = $query->latest()->get();
 
-        // 4. Pass the collections straight into your blade view
-        return view('dentists.index', compact('dentists'));
+        // 📊 4. DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
+        $currentYear = date('Y');
+        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
+        
+        $stats = [
+            'total_dentists' => $dentists->count(),
+            
+            'active_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
+                $latest = $dentist->memberships->first(); // Ordered desc, so first is the latest year
+                return $latest && $latest->membership_year === $currentFiscalYear && str_contains($latest->status, 'Active');
+            })->count(),
+
+            'pending_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
+                $latest = $dentist->memberships->first();
+                return $latest && $latest->membership_year === $currentFiscalYear && $latest->status === 'Pending';
+            })->count(),
+        ];
+
+        // Inactive/Delinquent are those who are unpaid, pending past years, or completely missing a current bracket log
+        $stats['inactive_members'] = $stats['total_dentists'] - ($stats['active_members'] + $stats['pending_members']);
+
+        // 5. Pass the collections and stats metrics straight into your blade view
+        return view('dentists.index', compact('dentists', 'stats'));
     }
 
     /**
@@ -148,7 +169,7 @@ class DentistController extends Controller
             'payment_status'  => 'required|string|max:50',
         ]);
 
-        // 🛠️ Fixed: Maps form data directly to your true columns 'membership_year' and 'status'
+        // 🛠️ Maps form data directly to true columns 'membership_year' and 'status'
         $dentist->memberships()->create([
             'membership_year' => $validated['membership_year'],
             'status'          => $validated['payment_status'],
