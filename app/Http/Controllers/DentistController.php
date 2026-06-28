@@ -78,13 +78,14 @@ class DentistController extends Controller
             'email_address'    => 'required|email|max:255',
             'home_address'     => 'required|string',
             'clinic_address'   => 'required|string',
-            'membership_year'  => 'required|integer|min:1900|max:' . date('Y'),
-            'payment_status'   => 'required|string|in:Active (Paid),Inactive (Unpaid)',
+            'membership_year'  => 'required|string|max:50', 
+            'payment_status'   => 'required|string',
         ]);
 
         DB::beginTransaction();
 
         try {
+            // 1. Create the Dentist Profile Row
             $dentist = DentistProfile::create([
                 'full_name'      => $validated['full_name'],
                 'prc_no'         => $validated['prc_no'],
@@ -95,10 +96,10 @@ class DentistController extends Controller
                 'clinic_address' => $validated['clinic_address'],
             ]);
 
-            // ⚠️ Keeping this as membership_year_bracket if your setup treats insertion differently during standard creation
+            // 2. Create the associated structural Membership log row mapping to your real schema columns
             $dentist->memberships()->create([
-                'membership_year_bracket' => $validated['membership_year'],
-                'payment_status'          => $validated['payment_status'],
+                'membership_year' => $validated['membership_year'], 
+                'status'          => $validated['payment_status'], 
             ]);
 
             DB::commit();
@@ -109,8 +110,11 @@ class DentistController extends Controller
         } catch (Exception $e) {
             DB::rollBack();
 
+            // Logs the error message to your tracking console logs automatically
+            logger($e->getMessage()); 
+
             return back()->withInput()
-                         ->withErrors(['error' => 'Database failure: Could not register record.']);
+                         ->withErrors(['error' => 'Database failure: ' . $e->getMessage()]);
         }
     }
 
@@ -178,6 +182,7 @@ class DentistController extends Controller
         return redirect()->route('dentists.index')
             ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
     }
+
     /**
      * Export the filtered dentist registry to a CSV spreadsheet.
      */
