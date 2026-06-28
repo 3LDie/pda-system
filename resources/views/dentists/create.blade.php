@@ -28,10 +28,12 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Date of Birth</label>
                                 <input type="date" name="date_of_birth" required value="{{ old('date_of_birth') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('date_of_birth') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Contact Number</label>
                                 <input type="text" name="contact_no" required value="{{ old('contact_no') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('contact_no') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Email Address</label>
@@ -41,10 +43,12 @@
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Home Address</label>
                                 <textarea name="home_address" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('home_address') }}</textarea>
+                                @error('home_address') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Clinic Address</label>
                                 <textarea name="clinic_address" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">{{ old('clinic_address') }}</textarea>
+                                @error('clinic_address') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
                     </div>
@@ -55,13 +59,15 @@
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
                                 <input type="text" name="membership_year" placeholder="e.g., 2026-27" required value="{{ old('membership_year') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                @error('membership_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Payment Status</label>
-                                <select name="status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
-                                    <option value="Active">Active (Paid)</option>
-                                    <option value="Pending">Pending (Unpaid)</option>
+                                <select name="payment_status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                    <option value="Active" {{ old('payment_status') == 'Active' ? 'selected' : '' }}>Active (Paid)</option>
+                                    <option value="Pending" {{ old('payment_status') == 'Pending' ? 'selected' : '' }}>Pending (Unpaid)</option>
                                 </select>
+                                @error('payment_status') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                         </div>
                     </div>
