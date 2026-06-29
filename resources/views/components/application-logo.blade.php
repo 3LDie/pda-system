@@ -1,1 +1,1 @@
-<img src="{{ asset('images/pda-logo.png') }}" class="h-10 w-auto" alt="PDA Logo">
+<img src="{{ asset('images/pda-logo.jpg') }}" alt="PDA Logo" class="w-20 h-20 rounded-full shadow-sm mx-auto">
