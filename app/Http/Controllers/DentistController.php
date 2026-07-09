@@ -32,7 +32,7 @@ class DentistController extends Controller
         // 3. Get records ordered by latest creation
         $dentists = $query->latest()->get();
 
-        // 📊 4. FIXED DYNAMIC ANALYTICS CALCULATIONS
+        // 📊 4. DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
         $currentYear = date('Y');
         $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
         
@@ -46,14 +46,20 @@ class DentistController extends Controller
                 });
             })->count(),
 
-            // ✅ Fix: Counts ANY dentist who has an active 'Pending' action log across any year block
+            // Counts ANY dentist who has an active 'Pending' action log across any year block
             'pending_members' => $dentists->filter(function($dentist) {
                 return $dentist->memberships->contains('status', 'Pending');
             })->count(),
         ];
 
-        // Inactive/Delinquent are those missing an Active or Pending record matching the current fiscal year completely
-        $stats['inactive_members'] = $stats['total_dentists'] - ($stats['active_members'] + $stats['pending_members']);
+        // ✅ Fix: Inactive members are those who are NEITHER active NOR pending for the current fiscal year track
+        $stats['inactive_members'] = $dentists->filter(function($dentist) use ($currentFiscalYear) {
+            $hasActiveOrPending = $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
+                return $membership->membership_year === $currentFiscalYear && 
+                       (str_contains($membership->status, 'Active') || $membership->status === 'Pending');
+            });
+            return !$hasActiveOrPending;
+        })->count();
 
         // 5. Pass the collections and stats metrics straight into your blade view
         return view('dentists.index', compact('dentists', 'stats'));
@@ -186,7 +192,7 @@ class DentistController extends Controller
     }
 
     /**
-     * ✅ New Feature: Safely delete an individual membership record log row.
+     * Safely delete an individual membership record log row.
      */
     public function destroyMembership($id)
     {
