@@ -44,7 +44,7 @@
             
             <div class="p-4 flex items-start gap-3">
                 @if(session('success'))
-                    <div class="flex-shrink-0 text-emerald-500 text-xl">✨</div>
+                    <div class="flex-shrink-0 text-emerald-500 text-xl">✅</div>
                     <div class="flex-1">
                         <p class="text-sm font-semibold text-gray-900">Operation Successful</p>
                         <p class="text-xs text-gray-500 mt-0.5">{{ session('success') }}</p>
