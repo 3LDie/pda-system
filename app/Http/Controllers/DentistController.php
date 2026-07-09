@@ -300,9 +300,12 @@ class DentistController extends Controller
             return back()->withErrors(['error' => 'Cannot generate certificate. This dentist profile does not hold an Active status for the current fiscal year.']);
         }
 
-        // 3. Compile variables to populate the certificate template layout canvas
+        // 🛠️ 3. CLEAN PREFIX DUPLICATES: Safely strip manual "Dr." or "Dr. " variations out using Regex
+        $cleanName = preg_replace('/^dr\.\s*/i', '', $dentist->full_name);
+
+        // 4. Compile variables to populate the certificate template layout canvas
         $data = [
-            'name'        => strtoupper($dentist->full_name), // Fixed typo: changed uppercase() to strtoupper()
+            'name'        => strtoupper($cleanName), 
             'prc'         => $dentist->prc_no,
             'clinic'      => $dentist->clinic_address,
             'fiscal_year' => $currentFiscalYear,
@@ -312,7 +315,7 @@ class DentistController extends Controller
         // 💡 Background tracking: Log the document generation action
         $this->logAction('PRINT', 'DentistProfile', "Generated an official Certificate of Good Standing document sheet for {$dentist->full_name}");
 
-        // 4. Load view layout file and stream the compiled binary download to browser target window
+        // 5. Load view layout file and stream the compiled binary download to browser target window
         $pdf = Pdf::loadView('dentists.certificate', $data)
                   ->setPaper('letter', 'landscape'); // standard landscape diploma dimension metrics
 
