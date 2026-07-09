@@ -19,7 +19,7 @@
                     @foreach($dentist->memberships as $membership)
                     { 
                         year: '{{ $membership->membership_year ?? 'N/A' }}', 
-                        status: '{{ addslashes($membership->payment_status ?? $membership->status ?? 'No Status') }}' 
+                        status: '{{ addslashes($membership->status ?? 'No Status') }}' 
                     },
                     @endforeach
                 ]
@@ -43,11 +43,11 @@
                     <div class="flex items-center space-x-3 gap-2">
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition">
-                           📥 Export Roster (CSV)
+                            📥 Export Roster (CSV)
                         </a>
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
-                           ➕ Register New Dentist
+                            ➕ Register New Dentist
                         </a>
                     </div>
                 </div>
@@ -121,11 +121,11 @@
                                         </template>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                                        <a :href="'/dentists/' + dentist.id + '/renew'" 
+                                        <a :href="`/dentists/${dentist.id}/renew`" 
                                            class="text-green-600 hover:text-green-900 transition font-semibold bg-green-50 px-3 py-1.5 rounded-md mr-2">
                                             🔄 Renew
                                         </a>
-                                        <a :href="'/dentists/' + dentist.id + '/edit'" 
+                                        <a :href="`/dentists/${dentist.id}/edit`" 
                                            class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md">
                                             ✏️ Edit
                                         </a>
