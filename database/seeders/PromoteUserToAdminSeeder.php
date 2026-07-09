@@ -13,7 +13,7 @@ class PromoteUserToAdminSeeder extends Seeder
     public function run(): void
     {
         // Find your existing login account by its email address
-        $user = User::where('email', 'test@example.com')->first(); // 👈 Replace with your actual login email if different!
+        $user = User::where('email', 'test@gmail.com')->first(); // 👈 Replace with your actual login email if different!
 
         if ($user) {
             $user->update(['role' => 'admin']);
