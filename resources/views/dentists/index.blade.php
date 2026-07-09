@@ -119,6 +119,7 @@
                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1 mb-1 group">
                                                 <span x-text="membership.year + ' (' + membership.status + ')'"></span>
                                                 
+                                                @if(auth()->user()->role === 'admin')
                                                 <form :action="'/memberships/' + membership.id" method="POST" class="inline flex items-center mb-0 ml-1.5" onsubmit="return confirm('Are you sure you want to completely delete this specific membership log year item?');">
                                                     @csrf
                                                     @method('DELETE')
@@ -126,6 +127,7 @@
                                                         &times;
                                                     </button>
                                                 </form>
+                                                @endif
                                             </span>
                                         </template>
                                     </td>
