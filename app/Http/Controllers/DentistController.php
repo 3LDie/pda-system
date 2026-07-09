@@ -15,7 +15,7 @@ class DentistController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Fetch all dentists along with their latest logged membership status
+        // 1. Fetch all dentists along with their logged membership statuses (ordered desc)
         $query = DentistProfile::with(['memberships' => function($query) {
             $query->orderBy('membership_year', 'desc'); 
         }]);
@@ -32,25 +32,29 @@ class DentistController extends Controller
         // 3. Get records ordered by latest creation
         $dentists = $query->latest()->get();
 
-        // 📊 4. DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
+        // 📊 4. FIXED DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
         $currentYear = date('Y');
         $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
         
         $stats = [
             'total_dentists' => $dentists->count(),
             
+            // ✅ Fix: Evaluates the entire profile membership history tracking log collection records
             'active_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
-                $latest = $dentist->memberships->first(); // Ordered desc, so first is the latest year
-                return $latest && $latest->membership_year === $currentFiscalYear && str_contains($latest->status, 'Active');
+                return $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
+                    return $membership->membership_year === $currentFiscalYear && str_contains($membership->status, 'Active');
+                });
             })->count(),
 
+            // ✅ Fix: Evaluates if any year matches the current fiscal track and is explicitly marked Pending
             'pending_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
-                $latest = $dentist->memberships->first();
-                return $latest && $latest->membership_year === $currentFiscalYear && $latest->status === 'Pending';
+                return $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
+                    return $membership->membership_year === $currentFiscalYear && $membership->status === 'Pending';
+                });
             })->count(),
         ];
 
-        // Inactive/Delinquent are those who are unpaid, pending past years, or completely missing a current bracket log
+        // Inactive/Delinquent are those missing an Active or Pending record matching the current fiscal year completely
         $stats['inactive_members'] = $stats['total_dentists'] - ($stats['active_members'] + $stats['pending_members']);
 
         // 5. Pass the collections and stats metrics straight into your blade view
