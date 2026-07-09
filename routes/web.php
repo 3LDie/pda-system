@@ -19,16 +19,22 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // PDA Dentist Directory Routes
+    // PDA Dentist Directory - Static/Literal Paths First (To avoid wildcard interception!)
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
     Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
+    Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export'); // 👈 Moved above wildcards!
     Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
+
+    // PDA Dentist Directory - Dynamic Parameter Wildcard Paths ({id})
     Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
     Route::put('/dentists/{id}', [DentistController::class, 'update'])->name('dentists.update');
+    
+    // ✅ Phase 5: PDF Certificate Generation Target Endpoint
+    Route::get('/dentists/{id}/certificate', [DentistController::class, 'generateCertificate'])->name('dentists.certificate');
+
     // PDA Dentist Membership Renewal Routes
     Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
     Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
-    Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
     Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
 });
 
