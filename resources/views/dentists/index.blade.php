@@ -18,6 +18,7 @@
                 memberships: [
                     @foreach($dentist->memberships as $membership)
                     { 
+                        id: '{{ $membership->id }}',
                         year: '{{ $membership->membership_year ?? 'N/A' }}', 
                         status: '{{ addslashes($membership->status ?? 'No Status') }}' 
                     },
@@ -115,8 +116,16 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <template x-for="membership in dentist.memberships">
                                             <span :class="membership.status && (membership.status.includes('Active') || membership.status.includes('Paid')) ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
-                                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1">
+                                                  class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1 mb-1 group">
                                                 <span x-text="membership.year + ' (' + membership.status + ')'"></span>
+                                                
+                                                <form :action="'/memberships/' + membership.id" method="POST" class="inline flex items-center mb-0 ml-1.5" onsubmit="return confirm('Are you sure you want to completely delete this specific membership log year item?');">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="text-gray-400 hover:text-red-600 transition font-bold font-sans text-xs focus:outline-none cursor-pointer">
+                                                        &times;
+                                                    </button>
+                                                </form>
                                             </span>
                                         </template>
                                     </td>

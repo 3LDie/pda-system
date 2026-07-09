@@ -32,25 +32,23 @@ class DentistController extends Controller
         // 3. Get records ordered by latest creation
         $dentists = $query->latest()->get();
 
-        // 📊 4. FIXED DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
+        // 📊 4. FIXED DYNAMIC ANALYTICS CALCULATIONS
         $currentYear = date('Y');
         $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
         
         $stats = [
             'total_dentists' => $dentists->count(),
             
-            // ✅ Fix: Evaluates the entire profile membership history tracking log collection records
+            // Evaluates the entire collection to find active members for the current fiscal year
             'active_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
                 return $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
                     return $membership->membership_year === $currentFiscalYear && str_contains($membership->status, 'Active');
                 });
             })->count(),
 
-            // ✅ Fix: Evaluates if any year matches the current fiscal track and is explicitly marked Pending
-            'pending_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
-                return $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
-                    return $membership->membership_year === $currentFiscalYear && $membership->status === 'Pending';
-                });
+            // ✅ Fix: Counts ANY dentist who has an active 'Pending' action log across any year block
+            'pending_members' => $dentists->filter(function($dentist) {
+                return $dentist->memberships->contains('status', 'Pending');
             })->count(),
         ];
 
@@ -185,6 +183,17 @@ class DentistController extends Controller
 
         return redirect()->route('dentists.index')
             ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
+    }
+
+    /**
+     * ✅ New Feature: Safely delete an individual membership record log row.
+     */
+    public function destroyMembership($id)
+    {
+        $membership = PdaMembership::findOrFail($id);
+        $membership->delete();
+
+        return back()->with('success', 'Membership log row successfully removed.');
     }
 
     /**

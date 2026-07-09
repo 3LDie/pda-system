@@ -29,6 +29,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
     Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
     Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
+    Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
 });
 
 require __DIR__.'/auth.php';
