@@ -6,10 +6,13 @@ use App\Models\DentistProfile;
 use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Traits\LogsActivity; // ✅ Added the custom trait namespace import
 use Exception;
 
 class DentistController extends Controller
 {
+    use LogsActivity; // ✅ Injected the background logger engine trait rules
+
     /**
      * Display the dentist directory registry list with analytics.
      */
@@ -52,7 +55,7 @@ class DentistController extends Controller
             })->count(),
         ];
 
-        // ✅ Fix: Inactive members are those who are NEITHER active NOR pending for the current fiscal year track
+        // Inactive members are those who are NEITHER active NOR pending for the current fiscal year track
         $stats['inactive_members'] = $dentists->filter(function($dentist) use ($currentFiscalYear) {
             $hasActiveOrPending = $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
                 return $membership->membership_year === $currentFiscalYear && 
@@ -112,6 +115,9 @@ class DentistController extends Controller
 
             DB::commit();
 
+            // ✅ Log Registration Event
+            $this->logAction('REGISTER', 'DentistProfile', "Registered a new profile row for {$dentist->full_name} (PRC: {$dentist->prc_no})");
+
             return redirect()->route('dentists.index')
                              ->with('success', 'Dentist record successfully registered!');
 
@@ -155,6 +161,9 @@ class DentistController extends Controller
 
         $dentist->update($validated);
 
+        // ✅ Log Update Event
+        $this->logAction('UPDATE', 'DentistProfile', "Updated personal profile records for {$dentist->full_name} (PRC: {$dentist->prc_no})");
+
         return redirect()->route('dentists.index')
                          ->with('success', 'Dentist profile updated successfully!');
     }
@@ -187,6 +196,9 @@ class DentistController extends Controller
             'status'          => $validated['payment_status'],
         ]);
 
+        // ✅ Log Renewal Event
+        $this->logAction('RENEW', 'PdaMembership', "Logged a new fiscal year renewal bracket [{$validated['membership_year']}] with status [{$validated['payment_status']}] for {$dentist->full_name}");
+
         return redirect()->route('dentists.index')
             ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
     }
@@ -198,6 +210,9 @@ class DentistController extends Controller
     {
         $membership = PdaMembership::findOrFail($id);
         $membership->delete();
+
+        // ✅ Log Deletion Event
+        $this->logAction('DELETE', 'PdaMembership', "Permanently removed membership year log row entry ID: [{$id}] for bracket [{$membership->membership_year}]");
 
         return back()->with('success', 'Membership log row successfully removed.');
     }
