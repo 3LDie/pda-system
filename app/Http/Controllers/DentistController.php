@@ -84,7 +84,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
-            'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // ✅ Image validation constraint
+            'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240', // ✅ Bumped to 10MB to match the update rule restriction
             'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
@@ -166,7 +166,7 @@ class DentistController extends Controller
 
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
-            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // ✅ Added validation array rule
+            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', // ✅ Allows files up to 10MB
             'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id,
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',

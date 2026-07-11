@@ -14,7 +14,7 @@
                     <p class="text-sm text-gray-500">Update personal details, contact channels, or local clinic address rows.</p>
                 </div>
 
-                <!-- 💡 Added enctype property for handling binary image files -->
+                <!-- 💡 Form layout maps binary file configurations correctly -->
                 <form action="{{ route('dentists.update', $dentist->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     @method('PUT')
@@ -30,12 +30,15 @@
                         </div>
                         <div class="w-full">
                             <label for="profile_image" class="block text-sm font-medium text-gray-700">Update Profile Image</label>
+                            
+                            <!-- 💡 Added spaces to the accept attribute string to allow normal file selectors to filter natively -->
                             <input type="file" 
                                    name="profile_image" 
                                    id="profile_image"
-                                   accept="image/jpeg,image/png,image/jpg"
+                                   accept="image/jpeg, image/png, image/jpg"
                                    class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
-                            <p class="text-xs text-gray-400 mt-1">Accepted Formats: JPEG, JPG, or PNG (Max size: 2MB). Leave empty to keep the current image.</p>
+                            
+                            <p class="text-xs text-gray-400 mt-1">Accepted Formats: JPEG, JPG, or PNG (Max size: 10MB). Leave empty to keep the current image.</p>
                             @error('profile_image') <p class="text-red-500 text-xs mt-1 font-medium">⚠️ {{ $message }}</p> @enderror
                         </div>
                     </div>

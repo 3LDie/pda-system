@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('dentist_profiles', function (Blueprint $table) {
-            $table->string('profile_image')->nullable()->after('full_name');
+            // ✅ Adds a nullable text column for storing the file path string stringently after the id column
+            $table->string('profile_image')->nullable()->after('id');
         });
     }
 
