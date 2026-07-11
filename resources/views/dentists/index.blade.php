@@ -12,6 +12,8 @@
             {
                 id: '{{ $dentist->id }}',
                 name: '{{ addslashes($dentist->full_name) }}',
+                // 📸 Passes the profile image asset path downstream to Alpine
+                image: '{{ $dentist->profile_image ? asset('storage/' . $dentist->profile_image) : '' }}',
                 prc: '{{ $dentist->prc_no }}',
                 contact: '{{ $dentist->contact_no }}',
                 clinic: '{{ addslashes($dentist->clinic_address) }}',
@@ -98,6 +100,8 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
+                                <!-- 📸 Profile Photo Column Title -->
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Photo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRC Number</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact No.</th>
@@ -109,6 +113,17 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             <template x-for="dentist in dentists">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
+                                    
+                                    <!-- 📸 Dynamic Render Slot for Profile Image Thumbnail -->
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <template x-if="dentist.image">
+                                            <img :src="dentist.image" alt="Profile" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
+                                        </template>
+                                        <template x-if="!dentist.image">
+                                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 shadow-inner text-xs">📸</div>
+                                        </template>
+                                    </td>
+
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900" x-text="dentist.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="dentist.prc"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="dentist.contact"></td>

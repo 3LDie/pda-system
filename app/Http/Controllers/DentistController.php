@@ -6,6 +6,7 @@ use App\Models\DentistProfile;
 use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage; // ✅ Imported for handling file deletions
 use App\Traits\LogsActivity; // ✅ Custom trait namespace import
 use Exception;
 
@@ -83,6 +84,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
+            'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // ✅ Image validation constraint
             'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
@@ -95,10 +97,18 @@ class DentistController extends Controller
 
         DB::beginTransaction();
 
+        $imagePath = null;
+
         try {
+            // 📸 Handle file upload logic if a binary image asset is attached
+            if ($request->hasFile('profile_image')) {
+                $imagePath = $request->file('profile_image')->store('profile_images', 'public');
+            }
+
             // 1. Create the Dentist Profile Row
             $dentist = DentistProfile::create([
                 'full_name'      => $validated['full_name'],
+                'profile_image'  => $imagePath, // ✅ Assigning the local upload file path string
                 'prc_no'         => $validated['prc_no'],
                 'date_of_birth'  => $validated['date_of_birth'],
                 'contact_no'     => $validated['contact_no'],
@@ -123,6 +133,11 @@ class DentistController extends Controller
 
         } catch (Exception $e) {
             DB::rollBack();
+
+            // Clean up stray uploaded file asset if database transaction fails
+            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
 
             // Logs the error message to your tracking console logs automatically
             logger($e->getMessage()); 
@@ -151,6 +166,7 @@ class DentistController extends Controller
 
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
+            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // ✅ Added validation array rule
             'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id,
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
@@ -158,6 +174,17 @@ class DentistController extends Controller
             'home_address'   => 'required|string',
             'clinic_address' => 'required|string',
         ]);
+
+        // 📸 Manage photo asset replacements safely
+        if ($request->hasFile('profile_image')) {
+            // Delete old avatar from the public disk storage footprint if one exists
+            if ($dentist->profile_image && Storage::disk('public')->exists($dentist->profile_image)) {
+                Storage::disk('public')->delete($dentist->profile_image);
+            }
+
+            // Store new resource asset element path parameters downstream
+            $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
+        }
 
         $dentist->update($validated);
 

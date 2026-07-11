@@ -34,7 +34,6 @@ Route::middleware('auth')->group(function () {
     Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
     Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
     Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
-    Route::post('/dentists/automation-report', [DentistController::class, 'sendToAutomationPipeline'])->name('dentists.automation');
     });
 
 require __DIR__.'/auth.php';

@@ -14,9 +14,31 @@
                     <p class="text-sm text-gray-500">Update personal details, contact channels, or local clinic address rows.</p>
                 </div>
 
-                <form action="{{ route('dentists.update', $dentist->id) }}" method="POST" class="space-y-6">
+                <!-- 💡 Added enctype property for handling binary image files -->
+                <form action="{{ route('dentists.update', $dentist->id) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
                     @method('PUT')
+
+                    <!-- 📸 Profile Image Management Section -->
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-100 flex flex-col sm:flex-row items-center gap-4">
+                        <div class="shrink-0">
+                            @if($dentist->profile_image)
+                                <img src="{{ asset('storage/' . $dentist->profile_image) }}" alt="Current Profile" class="w-20 h-20 rounded-full object-cover border-2 border-indigo-100 shadow-sm">
+                            @else
+                                <div class="w-20 h-20 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-2xl shadow-inner">📸</div>
+                            @endif
+                        </div>
+                        <div class="w-full">
+                            <label for="profile_image" class="block text-sm font-medium text-gray-700">Update Profile Image</label>
+                            <input type="file" 
+                                   name="profile_image" 
+                                   id="profile_image"
+                                   accept="image/jpeg,image/png,image/jpg"
+                                   class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-1.5 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition">
+                            <p class="text-xs text-gray-400 mt-1">Accepted Formats: JPEG, JPG, or PNG (Max size: 2MB). Leave empty to keep the current image.</p>
+                            @error('profile_image') <p class="text-red-500 text-xs mt-1 font-medium">⚠️ {{ $message }}</p> @enderror
+                        </div>
+                    </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
