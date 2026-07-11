@@ -132,11 +132,6 @@
                                         </template>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                                        <a :href="`/dentists/${dentist.id}/certificate`" 
-                                           target="_blank"
-                                           class="text-amber-600 hover:text-amber-900 transition font-semibold bg-amber-50 px-3 py-1.5 rounded-md mr-2 inline-flex items-center">
-                                            📄 Certificate
-                                        </a>
                                         <a :href="`/dentists/${dentist.id}/renew`" 
                                            class="text-green-600 hover:text-green-900 transition font-semibold bg-green-50 px-3 py-1.5 rounded-md mr-2 inline-flex items-center">
                                             🔄 Renew
