@@ -12,7 +12,6 @@
             {
                 id: '{{ $dentist->id }}',
                 name: '{{ addslashes($dentist->full_name) }}',
-                // 📸 Passes the profile image asset path downstream to Alpine
                 image: '{{ $dentist->profile_image ? asset('storage/' . $dentist->profile_image) : '' }}',
                 prc: '{{ $dentist->prc_no }}',
                 contact: '{{ $dentist->contact_no }}',
@@ -46,11 +45,11 @@
                     <div class="flex flex-wrap items-center gap-3">
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition">
-                            📥 Export Roster (CSV)
+                            Export Roster (CSV)
                         </a>
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none transition">
-                            ➕ Register New Dentist
+                            Register New Dentist
                         </a>
                     </div>
                 </div>
@@ -61,31 +60,24 @@
                             <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Total Directory</p>
                             <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ $stats['total_dentists'] }}</h4>
                         </div>
-                        <div class="w-12 h-12 bg-indigo-50 rounded-lg flex items-center justify-center text-xl">👥</div>
                     </div>
-
                     <div class="bg-emerald-50/50 border border-emerald-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Active This Year</p>
                             <h4 class="text-2xl font-bold text-emerald-900 mt-1">{{ $stats['active_members'] }}</h4>
                         </div>
-                        <div class="w-12 h-12 bg-emerald-100 rounded-lg flex items-center justify-center text-xl">✅</div>
                     </div>
-
                     <div class="bg-amber-50/50 border border-amber-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-semibold text-amber-600 uppercase tracking-wider">Pending Logs</p>
                             <h4 class="text-2xl font-bold text-amber-900 mt-1">{{ $stats['pending_members'] }}</h4>
                         </div>
-                        <div class="w-12 h-12 bg-amber-100 rounded-lg flex items-center justify-center text-xl">⏳</div>
                     </div>
-
                     <div class="bg-rose-50/50 border border-rose-100 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
                             <p class="text-xs font-semibold text-rose-600 uppercase tracking-wider">Inactive/Delinquent</p>
                             <h4 class="text-2xl font-bold text-rose-900 mt-1">{{ $stats['inactive_members'] }}</h4>
                         </div>
-                        <div class="w-12 h-12 bg-rose-100 rounded-lg flex items-center justify-center text-xl">🚨</div>
                     </div>
                 </div>
 
@@ -100,7 +92,6 @@
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <!-- 📸 Profile Photo Column Title -->
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Photo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Full Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRC Number</th>
@@ -113,17 +104,20 @@
                         <tbody class="bg-white divide-y divide-gray-200">
                             <template x-for="dentist in dentists">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
-                                    
-                                    <!-- 📸 Dynamic Render Slot for Profile Image Thumbnail -->
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <template x-if="dentist.image">
-                                            <img :src="dentist.image" alt="Profile" class="w-10 h-10 rounded-full object-cover border border-gray-200 shadow-sm">
-                                        </template>
-                                        <template x-if="!dentist.image">
-                                            <div class="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 border border-gray-200 shadow-inner text-xs">📸</div>
-                                        </template>
+                                        <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center">
+                                            <template x-if="dentist.image">
+                                                <!-- 💡 Escaped with @@ so Blade doesn't treat it as a directive -->
+                                                <img :src="dentist.image" 
+                                                     alt="Profile" 
+                                                     class="w-full h-full object-cover" 
+                                                     @@error="dentist.image = ''">
+                                            </template>
+                                            <template x-if="!dentist.image">
+                                                <span class="text-gray-400 font-sans text-xs select-none">📸</span>
+                                            </template>
+                                        </div>
                                     </td>
-
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900" x-text="dentist.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="dentist.prc"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" x-text="dentist.contact"></td>
@@ -147,14 +141,8 @@
                                         </template>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-right">
-                                        <a :href="`/dentists/${dentist.id}/renew`" 
-                                           class="text-green-600 hover:text-green-900 transition font-semibold bg-green-50 px-3 py-1.5 rounded-md mr-2 inline-flex items-center">
-                                            🔄 Renew
-                                        </a>
-                                        <a :href="`/dentists/${dentist.id}/edit`" 
-                                           class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md inline-flex items-center">
-                                            ✏️ Edit
-                                        </a>
+                                        <a :href="`/dentists/${dentist.id}/renew`" class="text-green-600 hover:text-green-900 transition font-semibold bg-green-50 px-3 py-1.5 rounded-md mr-2 inline-flex items-center">🔄 Renew</a>
+                                        <a :href="`/dentists/${dentist.id}/edit`" class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md inline-flex items-center">✏️ Edit</a>
                                     </td>
                                 </tr>
                             </template>
