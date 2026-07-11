@@ -7,7 +7,6 @@ use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Traits\LogsActivity; // ✅ Added the custom trait namespace import
-use Barryvdh\DomPDF\Facade\Pdf; // ✅ Phase 5: Imported DomPDF Facade for document rendering
 use Exception;
 
 class DentistController extends Controller
@@ -275,50 +274,5 @@ class DentistController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
-    }
-
-    /**
-     * ✅ Phase 5: Compile and stream an official landscape PDF Certificate of Good Standing.
-     */
-    public function generateCertificate($id)
-    {
-        // 1. Fetch dentist details along with their memberships
-        $dentist = DentistProfile::with(['memberships' => function($q) {
-            $q->orderBy('membership_year', 'desc');
-        }])->findOrFail($id);
-
-        // 2. Determine if they have an active record for the current dynamic fiscal bracket
-        $currentYear = date('Y');
-        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // "2026-27"
-
-        $hasActiveRecord = $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
-            return $membership->membership_year === $currentFiscalYear && str_contains($membership->status, 'Active');
-        });
-
-        // Safeguard: If they aren't active this year, throw an alert back to the screen via Toast
-        if (!$hasActiveRecord) {
-            return back()->withErrors(['error' => 'Cannot generate certificate. This dentist profile does not hold an Active status for the current fiscal year.']);
-        }
-
-        // 🛠️ 3. CLEAN PREFIX DUPLICATES: Safely strip manual "Dr." or "Dr. " variations out using Regex
-        $cleanName = preg_replace('/^dr\.\s*/i', '', $dentist->full_name);
-
-        // 4. Compile variables to populate the certificate template layout canvas
-        $data = [
-            'name'        => strtoupper($cleanName), 
-            'prc'         => $dentist->prc_no,
-            'clinic'      => $dentist->clinic_address,
-            'fiscal_year' => $currentFiscalYear,
-            'issue_date'  => date('F d, Y'),
-        ];
-
-        // 💡 Background tracking: Log the document generation action
-        $this->logAction('PRINT', 'DentistProfile', "Generated an official Certificate of Good Standing document sheet for {$dentist->full_name}");
-
-        // 5. Load view layout file and stream the compiled binary download to browser target window
-        $pdf = Pdf::loadView('dentists.certificate', $data)
-                  ->setPaper('letter', 'landscape'); // standard landscape diploma dimension metrics
-
-        return $pdf->stream("PDA_Certificate_{$dentist->prc_no}.pdf");
     }
 }
