@@ -29,13 +29,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
     Route::put('/dentists/{id}', [DentistController::class, 'update'])->name('dentists.update');
     
-    // ✅ Phase 5: PDF Certificate Generation Target Endpoint
-    Route::get('/dentists/{id}/certificate', [DentistController::class, 'generateCertificate'])->name('dentists.certificate');
 
     // PDA Dentist Membership Renewal Routes
     Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
     Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
     Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
-});
+    Route::post('/dentists/automation-report', [DentistController::class, 'sendToAutomationPipeline'])->name('dentists.automation');
+    });
 
 require __DIR__.'/auth.php';
