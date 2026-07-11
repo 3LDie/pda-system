@@ -6,13 +6,12 @@ use App\Models\DentistProfile;
 use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Traits\LogsActivity; // ✅ Added the custom trait namespace import
-use Illuminate\Support\Facades\Http; // ✅ Added HTTP Facade for outward webhooks
+use App\Traits\LogsActivity; // ✅ Custom trait namespace import
 use Exception;
 
 class DentistController extends Controller
 {
-    use LogsActivity; // ✅ Injected the background logger engine trait rules
+    use LogsActivity; // ✅ Background logger engine trait rules
 
     /**
      * Display the dentist directory registry list with analytics.
@@ -223,7 +222,7 @@ class DentistController extends Controller
      */
     public function export(Request $request)
     {
-        // 1. Re-use your index search logic so if they searched for something, only those results export!
+        // 1. Re-use index search logic so if they searched for something, only those results export!
         $query = DentistProfile::with(['memberships' => function($q) {
             $q->orderBy('membership_year', 'desc');
         }]);
@@ -275,65 +274,5 @@ class DentistController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
-    }
-
-    /**
-     * ✅ Automation Sync: Compile analytics parameters and broadcast payload to Make.com hook webhook.
-     */
-    public function sendToAutomationPipeline()
-    {
-        // 1. Calculate the active metrics live parameters
-        $query = DentistProfile::with(['memberships' => function($q) {
-            $q->orderBy('membership_year', 'desc'); 
-        }]);
-        
-        $dentists = $query->latest()->get();
-        $currentYear = date('Y');
-        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // "2026-27"
-        
-        $total = $dentists->count();
-        
-        $active = $dentists->filter(function($d) use ($currentFiscalYear) {
-            return $d->memberships->contains(function($m) use ($currentFiscalYear) {
-                return $m->membership_year === $currentFiscalYear && str_contains($m->status, 'Active');
-            });
-        })->count();
-
-        $pending = $dentists->filter(function($d) {
-            return $d->memberships->contains('status', 'Pending');
-        })->count();
-
-        $inactive = $dentists->filter(function($d) use ($currentFiscalYear) {
-            $hasActiveOrPending = $d->memberships->contains(function($m) use ($currentFiscalYear) {
-                return $m->membership_year === $currentFiscalYear && 
-                       (str_contains($m->status, 'Active') || $m->status === 'Pending');
-            });
-            return !$hasActiveOrPending;
-        })->count();
-
-        // 2. ⚠️ Make sure to drop the clean URL address copied from your Make panel right here:
-        $webhookUrl = 'https://hook.eu1.make.com/mza0l39u1irxetbsfq15tux4n84zna5d'; 
-
-        // 3. Dispatch the outward HTTP POST package
-        try {
-            $response = Http::post($webhookUrl, [
-                'report_title'     => 'PDA Chapter Directory Status Audit',
-                'timestamp'        => date('F d, Y g:i A'),
-                'total_directory'  => $total,
-                'active_members'   => $active,
-                'pending_logs'     => $pending,
-                'inactive_members' => $inactive,
-                'triggered_by'     => auth()->user()->name ?? 'System Administrator'
-            ]);
-
-            if ($response->successful()) {
-                return back()->with('success', 'Live analytics data successfully sent to Make.com pipeline!');
-            }
-
-            return back()->withErrors(['error' => 'Automation pipeline server returned status code: ' . $response->status()]);
-
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Failed to connect to the automation pipeline: ' . $e->getMessage()]);
-        }
     }
 }
