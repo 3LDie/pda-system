@@ -41,7 +41,16 @@
                         <h3 class="text-lg font-medium text-gray-900">Registry Records</h3>
                         <p class="text-sm text-gray-500">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
-                    <div class="flex items-center space-x-3 gap-2">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- ⚡ Automation Pipeline Trigger Button Form -->
+                        <form action="{{ route('dentists.automation') }}" method="POST" class="inline mb-0">
+                            @csrf
+                            <button type="submit" 
+                                    class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500 transition cursor-pointer">
+                                ⚡ Send Live Report to AI
+                            </button>
+                        </form>
+
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition">
                             📥 Export Roster (CSV)
