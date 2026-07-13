@@ -7,7 +7,7 @@ use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash; 
-use Illuminate\Support\Facades\Http; // 👈 Imported for the n8n Outbound Webhook payload pipeline
+use Illuminate\Support\Facades\Http; // Handles the outbound payload to n8n
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str; 
 use App\Traits\LogsActivity;
@@ -88,7 +88,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // 👈 FIXED: Points to dentist_profiles table
+            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // ✅ Fixed table target
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
             'email_address'    => 'required|email|max:255|unique:users,email', 
@@ -111,12 +111,17 @@ class DentistController extends Controller
             // 🔑 Automatically generate a secure 10-character temporary password string
             $temporaryPassword = Str::random(10);
 
-            // 1. Create the Member Account Row inside the users table
+            // 1. Create the Core Account Row inside the main users table
             $dentist = User::create([
-                'name'           => $validated['full_name'], 
-                'email'          => $validated['email_address'],
-                'password'       => Hash::make($temporaryPassword), 
-                'role'           => 'member', 
+                'name'     => $validated['full_name'], 
+                'email'    => $validated['email_address'],
+                'password' => Hash::make($temporaryPassword), 
+                'role'     => 'member', 
+            ]);
+
+            // 1b. Create the Profile data record inside the dentist_profiles table
+            // Note: If your User model relationship name is 'profile' instead of 'dentistProfile', change this line below
+            $dentist->dentistProfile()->create([
                 'full_name'      => $validated['full_name'],
                 'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
@@ -134,9 +139,9 @@ class DentistController extends Controller
 
             // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
             Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://your-n8n-instance.com/webhook/placeholder'), [
-                'full_name'          => $dentist->full_name,
+                'full_name'          => $validated['full_name'],
                 'email'              => $dentist->email,
-                'prc_no'             => $dentist->prc_no,
+                'prc_no'             => $validated['prc_no'],
                 'temporary_password' => $temporaryPassword,
                 'app_login_url'      => url('/login'),
                 'generated_at'       => now()->toIso8601String(),
@@ -145,7 +150,7 @@ class DentistController extends Controller
             DB::commit();
 
             // Log Registration Event
-            $this->logAction('REGISTER', 'User', "Registered a new member account for {$dentist->full_name} (PRC: {$dentist->prc_no}) and piped automation logs downstream to n8n.");
+            $this->logAction('REGISTER', 'User', "Registered a new member account for {$validated['full_name']} (PRC: {$validated['prc_no']}) and piped automation logs downstream to n8n.");
 
             return redirect()->route('dentists.index')
                              ->with('success', 'Member record successfully saved and n8n webhook workflow executed!');
@@ -186,7 +191,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
-            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id, // 👈 FIXED: Points to dentist_profiles table
+            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id, // ✅ Fixed table target
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
             'email_address'  => 'required|email|max:255|unique:users,email,' . $dentist->id, 
@@ -205,14 +210,25 @@ class DentistController extends Controller
             $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
         }
 
-        // Sync standard Breeze username mapping column along with full name updates
-        $validated['name'] = $validated['full_name'];
-        $validated['email'] = $validated['email_address'];
+        // Sync core authentication updates
+        $dentist->update([
+            'name'  => $validated['full_name'],
+            'email' => $validated['email_address']
+        ]);
 
-        $dentist->update($validated);
+        // Sync accompanying details updates
+        $dentist->dentistProfile()->update([
+            'full_name'      => $validated['full_name'],
+            'profile_image'  => $validated['profile_image'] ?? $dentist->dentistProfile->profile_image,
+            'prc_no'         => $validated['prc_no'],
+            'date_of_birth'  => $validated['date_of_birth'],
+            'contact_no'     => $validated['contact_no'],
+            'home_address'   => $validated['home_address'],
+            'clinic_address' => $validated['clinic_address'],
+        ]);
 
         // Log Update Event
-        $this->logAction('UPDATE', 'User', "Updated personal account records for {$dentist->full_name} (PRC: {$dentist->prc_no})");
+        $this->logAction('UPDATE', 'User', "Updated personal account records for {$validated['full_name']} (PRC: {$validated['prc_no']})");
 
         return redirect()->route('dentists.index')
                          ->with('success', 'Dentist profile updated successfully!');
