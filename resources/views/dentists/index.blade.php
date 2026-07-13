@@ -5,7 +5,7 @@
         </h2>
     </x-slot>
 
-    <!-- ✅ Swapped outer wrapper to single quotes to safely allow json_encode double quotes inside -->
+    <!-- ✅ Fixed: Bypasses Eloquent relationship calls by querying pda_memberships directly via profile_id -->
     <div class="py-12" x-data='{ 
         search: "",
         dentists: [
@@ -18,13 +18,15 @@
                 "contact": "{{ $dentist->contact_no ?? "" }}",
                 "clinic": {!! json_encode($dentist->clinic_address ?? "") !!},
                 "memberships": [
-                    @foreach($dentist->memberships->take(2) as $membership)
-                    { 
-                        "id": "{{ $membership->id }}",
-                        "year": "{{ $membership->membership_year ?? "N/A" }}", 
-                        "status": {!! json_encode($membership->status ?? "No Status") !!}
-                    },
-                    @endforeach
+                    @if($dentist->profile_id)
+                        @foreach(DB::table("pda_memberships")->where("dentist_profile_id", $dentist->profile_id)->orderBy("membership_year", "desc")->take(2)->get() as $membership)
+                        { 
+                            "id": "{{ $membership->id }}",
+                            "year": "{{ $membership->membership_year ?? "N/A" }}", 
+                            "status": {!! json_encode($membership->status ?? "No Status") !!}
+                        },
+                        @endforeach
+                    @endif
                 ]
             },
             @endforeach
@@ -51,7 +53,6 @@
                         <p class="text-sm text-gray-500">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
-                        {{-- 🔒 Secure Internal System Administration Provisioning Hook --}}
                         @if(auth()->user()->role === 'admin')
                             <a href="{{ route('register') }}" 
                                class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition duration-150 ease-in-out">
@@ -165,7 +166,6 @@
                                 </tr>
                             </template>
 
-                            {{-- Dynamic fallback window when records filtering equals zero targets --}}
                             <template x-if="filteredCount === 0">
                                 <tr>
                                     <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 bg-gray-50/50">
