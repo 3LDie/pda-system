@@ -88,7 +88,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'prc_no'           => 'required|string|max:15|unique:users,prc_no', 
+            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // 👈 FIXED: Points to dentist_profiles table
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
             'email_address'    => 'required|email|max:255|unique:users,email', 
@@ -133,7 +133,6 @@ class DentistController extends Controller
             ]);
 
             // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
-            // Note: Keep your webhook secret tokenized securely inside your .env configuration file!
             Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://your-n8n-instance.com/webhook/placeholder'), [
                 'full_name'          => $dentist->full_name,
                 'email'              => $dentist->email,
@@ -187,7 +186,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
-            'prc_no'         => 'required|string|max:15|unique:users,prc_no,' . $dentist->id, 
+            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id, // 👈 FIXED: Points to dentist_profiles table
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
             'email_address'  => 'required|email|max:255|unique:users,email,' . $dentist->id, 
