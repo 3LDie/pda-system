@@ -107,10 +107,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center">
                                             <template x-if="dentist.image">
+                                                <!-- ✅ Using explicit x-on:error prevents Blade engine processing collision -->
                                                 <img :src="dentist.image" 
                                                      alt="Profile" 
                                                      class="w-full h-full object-cover" 
-                                                     @error="dentist.image = ''">
+                                                     x-on:error="dentist.image = ''">
                                             </template>
                                             <template x-if="!dentist.image">
                                                 <span class="text-gray-400 font-sans text-xs select-none">📸</span>
