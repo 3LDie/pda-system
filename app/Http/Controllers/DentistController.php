@@ -122,7 +122,7 @@ class DentistController extends Controller
             // 1b. Direct insertion into dentist_profiles table (Bypasses missing user_id schema column constraints)
             DB::table('dentist_profiles')->insert([
                 'full_name'      => $validated['full_name'],
-                'email_address'  => $validated['email_address'], // ✅ Added missing field
+                'email_address'  => $validated['email_address'],
                 'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
                 'date_of_birth'  => $validated['date_of_birth'],
@@ -133,10 +133,12 @@ class DentistController extends Controller
                 'updated_at'     => now(),
             ]);
 
-            // 2. Create the associated structural Membership log row mapping to your real schema columns
-            $dentist->memberships()->create([
+            // 2. Direct insertion into pda_memberships table (✅ FIXED: Bypasses hidden Eloquent user_id mapping attempts)
+            DB::table('pda_memberships')->insert([
                 'membership_year' => $validated['membership_year'], 
                 'status'          => $validated['payment_status'], 
+                'created_at'      => now(),
+                'updated_at'      => now(),
             ]);
 
             // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
@@ -227,7 +229,7 @@ class DentistController extends Controller
         // Sync accompanying details updates directly via Direct DB query matching historical string contexts
         DB::table('dentist_profiles')->where('id', $profileId)->update([
             'full_name'      => $validated['full_name'],
-            'email_address'  => $validated['email_address'], // ✅ Added missing field
+            'email_address'  => $validated['email_address'], 
             'profile_image'  => $validated['profile_image'] ?? ($existingProfile->profile_image ?? null),
             'prc_no'         => $validated['prc_no'],
             'date_of_birth'  => $validated['date_of_birth'],
@@ -266,10 +268,12 @@ class DentistController extends Controller
             'payment_status'  => 'required|string|max:50',
         ]);
 
-        // Maps form data directly to true columns 'membership_year' and 'status'
-        $dentist->memberships()->create([
+        // Maps form data directly to columns using direct DB query (✅ FIXED: Prevents relation constraint error loops)
+        DB::table('pda_memberships')->insert([
             'membership_year' => $validated['membership_year'],
             'status'          => $validated['payment_status'],
+            'created_at'      => now(),
+            'updated_at'      => now(),
         ]);
 
         // Log Renewal Event
