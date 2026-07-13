@@ -43,28 +43,39 @@ class DentistController extends Controller
         $currentYear = date('Y');
         $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
         
+        // Fetch all memberships matching the profiles we just loaded to avoid relationship errors
+        $profileIds = $dentists->pluck('profile_id')->filter()->toArray();
+        $allMemberships = DB::table('pda_memberships')
+            ->whereIn('dentist_profile_id', $profileIds)
+            ->get();
+
         $stats = [
             'total_dentists' => $dentists->count(),
             
-            // Evaluates the entire collection to find active members for the current fiscal year
-            'active_members' => $dentists->filter(function($dentist) use ($currentFiscalYear) {
-                return $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
-                    return $membership->membership_year === $currentFiscalYear && str_contains($membership->status, 'Active');
-                });
+            // Evaluates the membership collection directly using the profile_id field
+            'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                      ->where('membership_year', $currentFiscalYear)
+                                      ->filter(function($m) { return str_contains($m->status, 'Active'); })
+                                      ->isNotEmpty();
             })->count(),
 
-            // Counts ANY dentist who has an active 'Pending' action log across any year block
-            'pending_members' => $dentists->filter(function($dentist) {
-                return $dentist->memberships->contains('status', 'Pending');
+            // Counts ANY dentist who has an active 'Pending' status flag entry
+            'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
+                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                      ->where('status', 'Pending')
+                                      ->isNotEmpty();
             })->count(),
         ];
 
         // Inactive members are those who are NEITHER active NOR pending for the current fiscal year track
-        $stats['inactive_members'] = $dentists->filter(function($dentist) use ($currentFiscalYear) {
-            $hasActiveOrPending = $dentist->memberships->contains(function($membership) use ($currentFiscalYear) {
-                return $membership->membership_year === $currentFiscalYear && 
-                       (str_contains($membership->status, 'Active') || $membership->status === 'Pending');
-            });
+        $stats['inactive_members'] = $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+            $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                ->where('membership_year', $currentFiscalYear)
+                ->filter(function($m) {
+                    return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                })->isNotEmpty();
+                
             return !$hasActiveOrPending;
         })->count();
 
@@ -135,7 +146,7 @@ class DentistController extends Controller
 
             // 2. Direct insertion into pda_memberships table linked via the captured profile ID
             DB::table('pda_memberships')->insert([
-                'dentist_profile_id' => $profileId, // ✅ FIXED: Feeds correct foreign key structural constraint column
+                'dentist_profile_id' => $profileId, 
                 'membership_year'    => $validated['membership_year'], 
                 'status'             => $validated['payment_status'], 
                 'created_at'         => now(),
@@ -275,7 +286,7 @@ class DentistController extends Controller
 
         // Maps renewal form entries using raw DB inserts to prevent user_id column conflicts
         DB::table('pda_memberships')->insert([
-            'dentist_profile_id' => $profileId, // ✅ FIXED: Keeps multi-year renewal logs linked safely
+            'dentist_profile_id' => $profileId, 
             'membership_year'    => $validated['membership_year'],
             'status'             => $validated['payment_status'],
             'created_at'         => now(),
