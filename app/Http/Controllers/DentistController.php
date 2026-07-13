@@ -153,8 +153,10 @@ class DentistController extends Controller
                 'updated_at'         => now(),
             ]);
 
-            // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
-            Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://your-n8n-instance.com/webhook/placeholder'), [
+            DB::commit();
+
+            // 🚀 3. Outbound Payload Hook (Fires out to n8n completely safe from database transaction locks)
+            Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome'), [
                 'full_name'          => $validated['full_name'],
                 'email'              => $dentist->email,
                 'prc_no'             => $validated['prc_no'],
@@ -162,8 +164,6 @@ class DentistController extends Controller
                 'app_login_url'      => url('/login'),
                 'generated_at'       => now()->toIso8601String(),
             ]);
-
-            DB::commit();
 
             // Log Registration Event
             $this->logAction('REGISTER', 'User', "Registered a new member account for {$validated['full_name']} (PRC: {$validated['prc_no']}) and piped automation logs downstream to n8n.");
@@ -249,6 +249,16 @@ class DentistController extends Controller
             'home_address'   => $validated['home_address'],
             'clinic_address' => $validated['clinic_address'],
             'updated_at'     => now(),
+        ]);
+
+        // 🚀 3. Outbound Payload Hook for Profile Updates (Pipes live updates straight down to n8n)
+        Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome'), [
+            'full_name'          => $validated['full_name'],
+            'email'              => $validated['email_address'],
+            'prc_no'             => $validated['prc_no'],
+            'temporary_password' => 'CHANGED_BY_ADMIN', // Flag telling n8n layout this is an existing profile update
+            'app_login_url'      => url('/login'),
+            'generated_at'       => now()->toIso8601String(),
         ]);
 
         // Log Update Event
