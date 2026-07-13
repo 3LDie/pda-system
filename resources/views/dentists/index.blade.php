@@ -51,6 +51,17 @@
                         <p class="text-sm text-gray-500">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
+                        {{-- 🔒 Secure Internal System Administration Provisioning Hook --}}
+                        @if(auth()->user()->role === 'admin')
+                            <a href="{{ route('register') }}" 
+                               class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition duration-150 ease-in-out">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
+                                </svg>
+                                Add System Admin
+                            </a>
+                        @endif
+
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
                            class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none transition">
                             Export Roster (CSV)
@@ -138,6 +149,7 @@
                                                 @if(auth()->user()->role === 'admin')
                                                 <form :action="'/memberships/' + membership.id" method="POST" class="inline flex items-center mb-0 ml-1.5" onsubmit="return confirm('Are you sure you want to completely delete this specific membership log year item?');">
                                                     @csrf
+                                                    @html('DELETE')
                                                     @method('DELETE')
                                                     <button type="submit" class="text-gray-400 hover:text-red-600 transition font-bold font-sans text-xs focus:outline-none cursor-pointer">
                                                         &times;
