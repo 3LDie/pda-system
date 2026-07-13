@@ -7,7 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany; // 👈 Imported for the relationship return type
+use Illuminate\Database\Eloquent\Relations\HasMany; 
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -48,7 +48,7 @@ class User extends Authenticatable
      */
     public function memberships(): HasMany
     {
-        // Links this user model directly to your membership logs table
-        return $this->hasMany(Membership::class); 
+        // ✅ FIXED: Points directly to your true PdaMembership model class
+        return $this->hasMany(PdaMembership::class); 
     }
 }
