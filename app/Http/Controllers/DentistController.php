@@ -122,6 +122,7 @@ class DentistController extends Controller
             // 1b. Direct insertion into dentist_profiles table (Bypasses missing user_id schema column constraints)
             DB::table('dentist_profiles')->insert([
                 'full_name'      => $validated['full_name'],
+                'email_address'  => $validated['email_address'], // ✅ Added missing field
                 'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
                 'date_of_birth'  => $validated['date_of_birth'],
@@ -226,6 +227,7 @@ class DentistController extends Controller
         // Sync accompanying details updates directly via Direct DB query matching historical string contexts
         DB::table('dentist_profiles')->where('id', $profileId)->update([
             'full_name'      => $validated['full_name'],
+            'email_address'  => $validated['email_address'], // ✅ Added missing field
             'profile_image'  => $validated['profile_image'] ?? ($existingProfile->profile_image ?? null),
             'prc_no'         => $validated['prc_no'],
             'date_of_birth'  => $validated['date_of_birth'],
