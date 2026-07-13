@@ -4,7 +4,11 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DentistController;
 use Illuminate\Support\Facades\Route;
 
+// ✅ Redirects authenticated traffic to dashboard, and lets guests stay on the main landing page
 Route::get('/', function () {
+    if (auth()->check()) {
+        return redirect()->route('dentists.index');
+    }
     return view('welcome');
 });
 
@@ -29,11 +33,10 @@ Route::middleware('auth')->group(function () {
     Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
     Route::put('/dentists/{id}', [DentistController::class, 'update'])->name('dentists.update');
     
-
     // PDA Dentist Membership Renewal Routes
     Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
     Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
     Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
-    });
+});
 
 require __DIR__.'/auth.php';
