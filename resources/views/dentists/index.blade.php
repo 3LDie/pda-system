@@ -149,7 +149,6 @@
                                                 @if(auth()->user()->role === 'admin')
                                                 <form :action="'/memberships/' + membership.id" method="POST" class="inline flex items-center mb-0 ml-1.5" onsubmit="return confirm('Are you sure you want to completely delete this specific membership log year item?');">
                                                     @csrf
-                                                    @html('DELETE')
                                                     @method('DELETE')
                                                     <button type="submit" class="text-gray-400 hover:text-red-600 transition font-bold font-sans text-xs focus:outline-none cursor-pointer">
                                                         &times;
