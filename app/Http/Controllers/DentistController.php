@@ -262,6 +262,7 @@ class DentistController extends Controller
             });
         }
 
+        // Keep sort order synced perfectly with index display
         $dentists = $query->latest()->get();
 
         // 2. Define the download headers for a CSV file stream
@@ -306,7 +307,6 @@ class DentistController extends Controller
                 $sustainingFeeStatus = $currentFeeRecord ? $currentFeeRecord->status : 'No Log for Current Year';
 
                 // Flatten all structural historical year bracket elements into a clean text line string
-                // Example Output: "2026-27: Active | 2025-26: Pending | 1991-92: Active"
                 $completeHistoryString = $dentist->memberships->isNotEmpty()
                     ? $dentist->memberships->map(function($membership) {
                         return "{$membership->membership_year}: {$membership->status}";

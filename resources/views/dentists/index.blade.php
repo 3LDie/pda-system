@@ -11,13 +11,14 @@
             @foreach($dentists as $dentist)
             {
                 id: '{{ $dentist->id }}',
-                name: {!! json_encode($dentist->full_name) !!},
+                name: {!! json_encode($dentist->full_name ?? '') !!},
                 image: '{{ $dentist->profile_image ? asset('storage/' . $dentist->profile_image) : '' }}',
-                prc: '{{ $dentist->prc_no }}',
-                contact: '{{ $dentist->contact_no }}',
-                clinic: {!! json_encode($dentist->clinic_address) !!},
+                prc: '{{ $dentist->prc_no ?? '' }}',
+                contact: '{{ $dentist->contact_no ?? '' }}',
+                clinic: {!! json_encode($dentist->clinic_address ?? '') !!},
                 memberships: [
-                    @foreach($dentist->memberships as $membership)
+                    {{-- Safely handle log capping array metrics in the template compilation layer --}}
+                    @foreach($dentist->memberships->take(2) as $membership)
                     { 
                         id: '{{ $membership->id }}',
                         year: '{{ $membership->membership_year ?? 'N/A' }}', 
@@ -31,7 +32,14 @@
         matches(dentist) {
             if (!this.search) return true;
             const term = this.search.toLowerCase();
-            return dentist.name.toLowerCase().includes(term) || dentist.prc.includes(term);
+            
+            const nameMatch = dentist.name ? dentist.name.toLowerCase().includes(term) : false;
+            const prcMatch = dentist.prc ? dentist.prc.toLowerCase().includes(term) : false;
+            
+            return nameMatch || prcMatch;
+        },
+        get filteredCount() {
+            return this.dentists.filter(d => this.matches(d)).length;
         }
     }">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -83,7 +91,7 @@
 
                 <div class="mb-6">
                     <input type="text" 
-                           x-model="search" 
+                           x-model.debounce.300ms="search" 
                            placeholder="Search by name or PRC number..." 
                            class="w-full md:w-1/3 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
                 </div>
@@ -107,7 +115,6 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center">
                                             <template x-if="dentist.image">
-                                                <!-- ✅ Using explicit x-on:error prevents Blade engine processing collision -->
                                                 <img :src="dentist.image" 
                                                      alt="Profile" 
                                                      class="w-full h-full object-cover" 
@@ -145,6 +152,15 @@
                                         <a :href="`/dentists/${dentist.id}/edit`" class="text-indigo-600 hover:text-indigo-900 transition font-semibold bg-indigo-50 px-3 py-1.5 rounded-md inline-flex items-center">✏️ Edit</a>
                                     </td>
                                 </tr>
+                            </template>
+
+                            {{-- Dynamic fallback window when records filtering equals zero targets --}}
+                            <template x-if="filteredCount === 0">
+                                <tr>
+                                    <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 bg-gray-50/50">
+                                        No registered dentists match your current search constraints.
+                                    </td>
+                                endtr>
                             </template>
                         </tbody>
                     </table>
