@@ -11,17 +11,17 @@
             @foreach($dentists as $dentist)
             {
                 id: '{{ $dentist->id }}',
-                name: '{{ addslashes($dentist->full_name) }}',
+                name: {!! json_encode($dentist->full_name) !!},
                 image: '{{ $dentist->profile_image ? asset('storage/' . $dentist->profile_image) : '' }}',
                 prc: '{{ $dentist->prc_no }}',
                 contact: '{{ $dentist->contact_no }}',
-                clinic: '{{ addslashes($dentist->clinic_address) }}',
+                clinic: {!! json_encode($dentist->clinic_address) !!},
                 memberships: [
                     @foreach($dentist->memberships as $membership)
                     { 
                         id: '{{ $membership->id }}',
                         year: '{{ $membership->membership_year ?? 'N/A' }}', 
-                        status: '{{ addslashes($membership->status ?? 'No Status') }}' 
+                        status: {!! json_encode($membership->status ?? 'No Status') !!}
                     },
                     @endforeach
                 ]
@@ -97,7 +97,7 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">PRC Number</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact No.</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Clinic Address</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership Years Logged</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Membership Years Logged (Max 2)</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
@@ -107,11 +107,10 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 border border-gray-200 shadow-sm flex items-center justify-center">
                                             <template x-if="dentist.image">
-                                                <!-- 💡 Escaped with @@ so Blade doesn't treat it as a directive -->
                                                 <img :src="dentist.image" 
                                                      alt="Profile" 
                                                      class="w-full h-full object-cover" 
-                                                     @@error="dentist.image = ''">
+                                                     @error="dentist.image = ''">
                                             </template>
                                             <template x-if="!dentist.image">
                                                 <span class="text-gray-400 font-sans text-xs select-none">📸</span>
