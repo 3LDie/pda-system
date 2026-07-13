@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\DentistProfile;
+use App\Models\User; 
 use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash; 
+use Illuminate\Support\Facades\Http; // 👈 Imported for the n8n Outbound Webhook payload pipeline
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str; 
 use App\Traits\LogsActivity;
 use Exception;
 
@@ -19,8 +22,8 @@ class DentistController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Fetch all dentists along with their logged membership statuses (ordered desc)
-        $query = DentistProfile::with(['memberships' => function($query) {
+        // 1. Fetch all users who have a 'member' role along with their logged membership statuses
+        $query = User::where('role', 'member')->with(['memberships' => function($query) {
             $query->orderBy('membership_year', 'desc'); 
         }]);
 
@@ -85,10 +88,10 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
+            'prc_no'           => 'required|string|max:15|unique:users,prc_no', 
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
-            'email_address'    => 'required|email|max:255',
+            'email_address'    => 'required|email|max:255|unique:users,email', 
             'home_address'     => 'required|string',
             'clinic_address'   => 'required|string',
             'membership_year'  => 'required|string|max:50', 
@@ -105,14 +108,20 @@ class DentistController extends Controller
                 $imagePath = $request->file('profile_image')->store('profile_images', 'public');
             }
 
-            // 1. Create the Dentist Profile Row
-            $dentist = DentistProfile::create([
+            // 🔑 Automatically generate a secure 10-character temporary password string
+            $temporaryPassword = Str::random(10);
+
+            // 1. Create the Member Account Row inside the users table
+            $dentist = User::create([
+                'name'           => $validated['full_name'], 
+                'email'          => $validated['email_address'],
+                'password'       => Hash::make($temporaryPassword), 
+                'role'           => 'member', 
                 'full_name'      => $validated['full_name'],
-                'profile_image'  => $imagePath, // Assigning the local upload file path string
+                'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
                 'date_of_birth'  => $validated['date_of_birth'],
                 'contact_no'     => $validated['contact_no'],
-                'email_address'  => $validated['email_address'],
                 'home_address'   => $validated['home_address'],
                 'clinic_address' => $validated['clinic_address'],
             ]);
@@ -123,13 +132,24 @@ class DentistController extends Controller
                 'status'          => $validated['payment_status'], 
             ]);
 
+            // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
+            // Note: Keep your webhook secret tokenized securely inside your .env configuration file!
+            Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://your-n8n-instance.com/webhook/placeholder'), [
+                'full_name'          => $dentist->full_name,
+                'email'              => $dentist->email,
+                'prc_no'             => $dentist->prc_no,
+                'temporary_password' => $temporaryPassword,
+                'app_login_url'      => url('/login'),
+                'generated_at'       => now()->toIso8601String(),
+            ]);
+
             DB::commit();
 
             // Log Registration Event
-            $this->logAction('REGISTER', 'DentistProfile', "Registered a new profile row for {$dentist->full_name} (PRC: {$dentist->prc_no})");
+            $this->logAction('REGISTER', 'User', "Registered a new member account for {$dentist->full_name} (PRC: {$dentist->prc_no}) and piped automation logs downstream to n8n.");
 
             return redirect()->route('dentists.index')
-                             ->with('success', 'Dentist record successfully registered!');
+                             ->with('success', 'Member record successfully saved and n8n webhook workflow executed!');
 
         } catch (Exception $e) {
             DB::rollBack();
@@ -152,7 +172,7 @@ class DentistController extends Controller
      */
     public function edit($id)
     {
-        $dentist = DentistProfile::findOrFail($id);
+        $dentist = User::where('role', 'member')->findOrFail($id);
         
         return view('dentists.edit', compact('dentist'));
     }
@@ -162,15 +182,15 @@ class DentistController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $dentist = DentistProfile::findOrFail($id);
+        $dentist = User::where('role', 'member')->findOrFail($id);
 
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
-            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', // ✅ Allows files up to 10MB
-            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id,
+            'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
+            'prc_no'         => 'required|string|max:15|unique:users,prc_no,' . $dentist->id, 
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
-            'email_address'  => 'required|email|max:255',
+            'email_address'  => 'required|email|max:255|unique:users,email,' . $dentist->id, 
             'home_address'   => 'required|string',
             'clinic_address' => 'required|string',
         ]);
@@ -186,10 +206,14 @@ class DentistController extends Controller
             $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
         }
 
+        // Sync standard Breeze username mapping column along with full name updates
+        $validated['name'] = $validated['full_name'];
+        $validated['email'] = $validated['email_address'];
+
         $dentist->update($validated);
 
         // Log Update Event
-        $this->logAction('UPDATE', 'DentistProfile', "Updated personal profile records for {$dentist->full_name} (PRC: {$dentist->prc_no})");
+        $this->logAction('UPDATE', 'User', "Updated personal account records for {$dentist->full_name} (PRC: {$dentist->prc_no})");
 
         return redirect()->route('dentists.index')
                          ->with('success', 'Dentist profile updated successfully!');
@@ -200,7 +224,7 @@ class DentistController extends Controller
      */
     public function renew($id)
     {
-        $dentist = DentistProfile::findOrFail($id);
+        $dentist = User::where('role', 'member')->findOrFail($id);
         
         return view('dentists.renew', compact('dentist'));
     }
@@ -210,7 +234,7 @@ class DentistController extends Controller
      */
     public function storeRenewal(Request $request, $id)
     {
-        $dentist = DentistProfile::findOrFail($id);
+        $dentist = User::where('role', 'member')->findOrFail($id);
 
         $validated = $request->validate([
             'membership_year' => 'required|string|max:20',
@@ -249,8 +273,7 @@ class DentistController extends Controller
      */
     public function export(Request $request)
     {
-        // 1. Re-use index search logic so if they searched for something, only those results export!
-        $query = DentistProfile::with(['memberships' => function($q) {
+        $query = User::where('role', 'member')->with(['memberships' => function($q) {
             $q->orderBy('membership_year', 'desc');
         }]);
 
@@ -262,10 +285,8 @@ class DentistController extends Controller
             });
         }
 
-        // Keep sort order synced perfectly with index display
         $dentists = $query->latest()->get();
 
-        // 2. Define the download headers for a CSV file stream
         $fileName = 'pda_dentist_deep_export_' . date('Y-m-d') . '.csv';
         $headers = [
             "Content-type"        => "text/csv",
@@ -275,11 +296,9 @@ class DentistController extends Controller
             "Expires"             => "0"
         ];
 
-        // 3. Stream the raw database values straight to the browser link buffer
         $callback = function() use ($dentists) {
             $file = fopen('php://output', 'w');
             
-            // Insert advanced spreadsheet column headers (added deep metrics)
             fputcsv($file, [
                 'Full Name', 
                 'PRC Number', 
@@ -291,22 +310,18 @@ class DentistController extends Controller
                 'Complete Historical Logs (Year: Status)'
             ]);
 
-            // Calculate current fiscal bracket parameters dynamically matching index logic
             $currentYear = date('Y');
             $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
 
             foreach ($dentists as $dentist) {
-                // Find latest single log row entry standard metric
                 $latestMembership = $dentist->memberships->first();
                 $statusString = $latestMembership 
                     ? $latestMembership->membership_year . ' (' . $latestMembership->status . ')'
                     : 'No Logs';
 
-                // Look up sustaining fee target record status block for current fiscal cycle 
                 $currentFeeRecord = $dentist->memberships->where('membership_year', $currentFiscalYear)->first();
                 $sustainingFeeStatus = $currentFeeRecord ? $currentFeeRecord->status : 'No Log for Current Year';
 
-                // Flatten all structural historical year bracket elements into a clean text line string
                 $completeHistoryString = $dentist->memberships->isNotEmpty()
                     ? $dentist->memberships->map(function($membership) {
                         return "{$membership->membership_year}: {$membership->status}";
@@ -317,11 +332,11 @@ class DentistController extends Controller
                     $dentist->full_name,
                     $dentist->prc_no,
                     $dentist->contact_no,
-                    $dentist->email_address,
+                    $dentist->email, 
                     $dentist->clinic_address,
                     $statusString,
-                    $sustainingFeeStatus,   // Isolates payment validation step status
-                    $completeHistoryString  // The complete historical archive map layout string
+                    $sustainingFeeStatus,   
+                    $completeHistoryString  
                 ]);
             }
 
