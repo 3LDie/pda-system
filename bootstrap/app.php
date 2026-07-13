@@ -16,6 +16,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\IsAdmin::class,
         ]);
+
+        // 🔒 Intercepts and overrides the default framework guest/user redirection paths
+        $middleware->redirectTo(
+            guests: '/login',   // Forces logged-out traffic straight to the login form
+            users: '/dentists'  // Forces logged-in users away from standard auth paths
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
