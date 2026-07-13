@@ -70,8 +70,26 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Initial PDA Membership Log</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
-                                <input type="text" name="membership_year" placeholder="e.g., 2026-27" required value="{{ old('membership_year') }}" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <label for="membership_year" class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
+                                <select name="membership_year" id="membership_year" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                    @php
+                                        // Generates a historical range up to incoming active cycles relative to current context
+                                        $currentYear = (int) date('Y');
+                                        $defaultYearBracket = "{$currentYear}-" . substr($currentYear + 1, -2);
+                                        $selectedYear = old('membership_year', $defaultYearBracket);
+                                    @endphp
+
+                                    @for ($i = -5; $i <= 2; $i++)
+                                        @php
+                                            $startYear = $currentYear + $i;
+                                            $endYearShort = substr($startYear + 1, -2);
+                                            $yearOption = "{$startYear}-{$endYearShort}";
+                                        @endphp
+                                        <option value="{{ $yearOption }}" {{ $selectedYear === $yearOption ? 'selected' : '' }}>
+                                            {{ $yearOption }}
+                                        </option>
+                                    @endfor
+                                </select>
                                 @error('membership_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
                             <div>
