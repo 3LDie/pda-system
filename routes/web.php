@@ -2,14 +2,15 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DentistController;
+use App\Http\Controllers\Auth\RegisteredUserController; // 👈 Imported for the internal admin registration form
 use Illuminate\Support\Facades\Route;
 
-// ✅ Redirects authenticated traffic to dashboard, and lets guests stay on the main landing page
+// ✅ Enforce Admin-only landing entry pathing
 Route::get('/', function () {
     if (auth()->check()) {
         return redirect()->route('dentists.index');
     }
-    return view('welcome');
+    return redirect()->route('login');
 });
 
 Route::get('/dashboard', function () {
@@ -23,10 +24,17 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // 🔒 Secure Internal Admin Creation Panel (Option 2 Implementation)
+    // Only logged-in accounts who pass your 'admin' middleware rule can view or register new admin credentials.
+    Route::middleware('admin')->group(function () {
+        Route::get('/admin/register', [RegisteredUserController::class, 'create'])->name('register');
+        Route::post('/admin/register', [RegisteredUserController::class, 'store']);
+    });
+
     // PDA Dentist Directory - Static/Literal Paths First (To avoid wildcard interception!)
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
     Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
-    Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export'); // 👈 Moved above wildcards!
+    Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
     Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
 
     // PDA Dentist Directory - Dynamic Parameter Wildcard Paths ({id})
