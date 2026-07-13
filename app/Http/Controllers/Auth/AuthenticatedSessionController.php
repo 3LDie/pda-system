@@ -28,7 +28,8 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(route('dashboard', absolute: false));
+        // ✅ Modified to route the admin immediately to the directory layout index grid view
+        return redirect()->intended(route('dentists.index', absolute: false));
     }
 
     /**
