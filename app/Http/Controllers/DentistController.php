@@ -7,7 +7,7 @@ use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash; 
-use Illuminate\Support\Facades\Http; // Handles the outbound payload to n8n
+use Illuminate\Support\Facades\Http; 
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str; 
 use App\Traits\LogsActivity;
@@ -17,17 +17,12 @@ class DentistController extends Controller
 {
     use LogsActivity; 
 
-    /**
-     * Display the dentist directory registry list with analytics.
-     */
     public function index(Request $request)
     {
-        // 1. Join users table with dentist_profiles table to get all unified records
         $query = User::where('users.role', 'member')
-            ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name') // Matches on full name string reference
+            ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
-        // 2. Add backend support for the search bar filtering
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -36,14 +31,10 @@ class DentistController extends Controller
             });
         }
 
-        // 3. Get records ordered by latest creation
         $dentists = $query->latest('users.created_at')->get();
-
-        // 📊 4. DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
         $currentYear = date('Y');
-        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
+        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
         
-        // Fetch all memberships matching the profiles we just loaded to avoid relationship errors
         $profileIds = $dentists->pluck('profile_id')->filter()->toArray();
         $allMemberships = DB::table('pda_memberships')
             ->whereIn('dentist_profile_id', $profileIds)
@@ -51,16 +42,12 @@ class DentistController extends Controller
 
         $stats = [
             'total_dentists' => $dentists->count(),
-            
-            // Evaluates the membership collection directly using the profile_id field
             'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
                 return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                                       ->where('membership_year', $currentFiscalYear)
                                       ->filter(function($m) { return str_contains($m->status, 'Active'); })
                                       ->isNotEmpty();
             })->count(),
-
-            // Counts ANY dentist who has an active 'Pending' status flag entry
             'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
                 return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                                       ->where('status', 'Pending')
@@ -68,32 +55,20 @@ class DentistController extends Controller
             })->count(),
         ];
 
-        // Inactive members are those who are NEITHER active NOR pending for the current fiscal year track
         $stats['inactive_members'] = $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
             $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                 ->where('membership_year', $currentFiscalYear)
                 ->filter(function($m) {
                     return str_contains($m->status, 'Active') || $m->status === 'Pending';
                 })->isNotEmpty();
-                
             return !$hasActiveOrPending;
         })->count();
 
-        // 5. Pass the collections and stats metrics straight into your blade view
         return view('dentists.index', compact('dentists', 'stats'));
     }
 
-    /**
-     * Show the form for registering a new dentist.
-     */
-    public function create()
-    {
-        return view('dentists.create');
-    }
+    public function create() { return view('dentists.create'); }
 
-    /**
-     * Store a newly created dentist profile and membership log in storage.
-     */
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -110,19 +85,14 @@ class DentistController extends Controller
         ]);
 
         DB::beginTransaction();
-
         $imagePath = null;
 
         try {
-            // 📸 Handle file upload logic if a binary image asset is attached
             if ($request->hasFile('profile_image')) {
                 $imagePath = $request->file('profile_image')->store('profile_images', 'public');
             }
 
-            // 🔑 Automatically generate a secure 10-character temporary password string
             $temporaryPassword = Str::random(10);
-
-            // 1. Create the Core Account Row inside the main users table
             $dentist = User::create([
                 'name'     => $validated['full_name'], 
                 'email'    => $validated['email_address'],
@@ -130,7 +100,6 @@ class DentistController extends Controller
                 'role'     => 'member', 
             ]);
 
-            // 1b. Direct insertion into dentist_profiles table and capture the Auto-Incremented ID
             $profileId = DB::table('dentist_profiles')->insertGetId([
                 'full_name'      => $validated['full_name'],
                 'email_address'  => $validated['email_address'],
@@ -144,7 +113,6 @@ class DentistController extends Controller
                 'updated_at'     => now(),
             ]);
 
-            // 2. Direct insertion into pda_memberships table linked via the captured profile ID
             DB::table('pda_memberships')->insert([
                 'dentist_profile_id' => $profileId, 
                 'membership_year'    => $validated['membership_year'], 
@@ -155,8 +123,7 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // 🚀 3. Outbound Payload Hook (Fires out to n8n completely safe from database transaction locks)
-            Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome'), [
+            Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
                 'full_name'          => $validated['full_name'],
                 'email'              => $dentist->email,
                 'prc_no'             => $validated['prc_no'],
@@ -165,49 +132,32 @@ class DentistController extends Controller
                 'generated_at'       => now()->toIso8601String(),
             ]);
 
-            // Log Registration Event
             $this->logAction('REGISTER', 'User', "Registered a new member account for {$validated['full_name']} (PRC: {$validated['prc_no']}) and piped automation logs downstream to n8n.");
 
-            return redirect()->route('dentists.index')
-                             ->with('success', 'Member record successfully saved and n8n webhook workflow executed!');
+            return redirect()->route('dentists.index')->with('success', 'Member record successfully saved and n8n webhook workflow executed!');
 
         } catch (Exception $e) {
             DB::rollBack();
-
-            // Clean up stray uploaded file asset if database transaction fails
             if ($imagePath && Storage::disk('public')->exists($imagePath)) {
                 Storage::disk('public')->delete($imagePath);
             }
-
-            // Logs the error message to your tracking console logs automatically
             logger($e->getMessage()); 
-
-            return back()->withInput()
-                         ->withErrors(['error' => 'Database failure: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors(['error' => 'Database failure: ' . $e->getMessage()]);
         }
     }
 
-    /**
-     * Show the form for editing an existing dentist profile.
-     */
     public function edit($id)
     {
         $dentist = User::where('role', 'member')
             ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name')
             ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.home_address', 'dentist_profiles.date_of_birth', 'dentist_profiles.profile_image')
             ->findOrFail($id);
-        
         return view('dentists.edit', compact('dentist'));
     }
 
-    /**
-     * Update the specified dentist profile in storage.
-     */
     public function update(Request $request, $id)
     {
         $dentist = User::where('role', 'member')->findOrFail($id);
-
-        // Fetch current profile using full_name to look up historical unique values safely
         $existingProfile = DB::table('dentist_profiles')->where('full_name', $dentist->name)->first();
         $profileId = $existingProfile ? $existingProfile->id : $id;
 
@@ -222,23 +172,15 @@ class DentistController extends Controller
             'clinic_address' => 'required|string',
         ]);
 
-        // Manage photo asset replacements safely
         if ($request->hasFile('profile_image')) {
             if ($existingProfile && $existingProfile->profile_image && Storage::disk('public')->exists($existingProfile->profile_image)) {
                 Storage::disk('public')->delete($existingProfile->profile_image);
             }
-
-            // Store new resource asset element path parameters downstream
             $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
         }
 
-        // Sync core authentication updates
-        $dentist->update([
-            'name'  => $validated['full_name'],
-            'email' => $validated['email_address']
-        ]);
+        $dentist->update(['name' => $validated['full_name'], 'email' => $validated['email_address']]);
 
-        // Sync accompanying details updates directly via Direct DB query matching historical string contexts
         DB::table('dentist_profiles')->where('id', $profileId)->update([
             'full_name'      => $validated['full_name'],
             'email_address'  => $validated['email_address'], 
@@ -251,50 +193,37 @@ class DentistController extends Controller
             'updated_at'     => now(),
         ]);
 
-        // 🚀 3. Outbound Payload Hook for Profile Updates (Pipes live updates straight down to n8n)
-        Http::post(env('N8N_WELCOME_WEBHOOK_URL', 'https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome'), [
+        Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
             'full_name'          => $validated['full_name'],
             'email'              => $validated['email_address'],
             'prc_no'             => $validated['prc_no'],
-            'temporary_password' => 'CHANGED_BY_ADMIN', // Flag telling n8n layout this is an existing profile update
+            'temporary_password' => 'CHANGED_BY_ADMIN',
             'app_login_url'      => url('/login'),
             'generated_at'       => now()->toIso8601String(),
         ]);
 
-        // Log Update Event
         $this->logAction('UPDATE', 'User', "Updated personal account records for {$validated['full_name']} (PRC: {$validated['prc_no']})");
 
-        return redirect()->route('dentists.index')
-                         ->with('success', 'Dentist profile updated successfully!');
+        return redirect()->route('dentists.index')->with('success', 'Dentist profile updated successfully!');
     }
 
-    /**
-     * Show the form for renewing a dentist's membership.
-     */
     public function renew($id)
     {
         $dentist = User::where('role', 'member')->findOrFail($id);
-        
         return view('dentists.renew', compact('dentist'));
     }
 
-    /**
-     * Store a newly created membership log row in storage.
-     */
     public function storeRenewal(Request $request, $id)
     {
         $dentist = User::where('role', 'member')->findOrFail($id);
-
         $validated = $request->validate([
             'membership_year' => 'required|string|max:20',
             'payment_status'  => 'required|string|max:50',
         ]);
 
-        // Find the profile id relative to the full name layout mapping string reference context
         $existingProfile = DB::table('dentist_profiles')->where('full_name', $dentist->name)->first();
         $profileId = $existingProfile ? $existingProfile->id : null;
 
-        // Maps renewal form entries using raw DB inserts to prevent user_id column conflicts
         DB::table('pda_memberships')->insert([
             'dentist_profile_id' => $profileId, 
             'membership_year'    => $validated['membership_year'],
@@ -303,30 +232,19 @@ class DentistController extends Controller
             'updated_at'         => now(),
         ]);
 
-        // Log Renewal Event
         $this->logAction('RENEW', 'PdaMembership', "Logged a new fiscal year renewal bracket [{$validated['membership_year']}] with status [{$validated['payment_status']}] for {$dentist->full_name}");
 
-        return redirect()->route('dentists.index')
-            ->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
+        return redirect()->route('dentists.index')->with('success', 'Membership year successfully logged for ' . $dentist->full_name);
     }
 
-    /**
-     * Safely delete an individual membership record log row.
-     */
     public function destroyMembership($id)
     {
         $membership = PdaMembership::findOrFail($id);
         $membership->delete();
-
-        // Log Deletion Event
         $this->logAction('DELETE', 'PdaMembership', "Permanently removed membership year log row entry ID: [{$id}] for bracket [{$membership->membership_year}]");
-
         return back()->with('success', 'Membership log row successfully removed.');
     }
 
-    /**
-     * Export the filtered dentist registry to a CSV spreadsheet with deep history tracking.
-     */
     public function export(Request $request)
     {
         $query = User::where('role', 'member')->with(['memberships' => function($q) {
@@ -354,48 +272,20 @@ class DentistController extends Controller
 
         $callback = function() use ($dentists) {
             $file = fopen('php://output', 'w');
-            
-            fputcsv($file, [
-                'Full Name', 
-                'PRC Number', 
-                'Contact No.', 
-                'Email Address', 
-                'Clinic Address', 
-                'Latest Membership Status',
-                'Sustaining Fee Status (Current Fiscal Yr)',
-                'Complete Historical Logs (Year: Status)'
-            ]);
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Address', 'Clinic Address', 'Latest Membership Status', 'Sustaining Fee Status (Current Fiscal Yr)', 'Complete Historical Logs (Year: Status)']);
 
             $currentYear = date('Y');
-            $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
+            $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
 
             foreach ($dentists as $dentist) {
                 $latestMembership = $dentist->memberships->first();
-                $statusString = $latestMembership 
-                    ? $latestMembership->membership_year . ' (' . $latestMembership->status . ')'
-                    : 'No Logs';
-
+                $statusString = $latestMembership ? $latestMembership->membership_year . ' (' . $latestMembership->status . ')' : 'No Logs';
                 $currentFeeRecord = $dentist->memberships->where('membership_year', $currentFiscalYear)->first();
                 $sustainingFeeStatus = $currentFeeRecord ? $currentFeeRecord->status : 'No Log for Current Year';
+                $completeHistoryString = $dentist->memberships->isNotEmpty() ? $dentist->memberships->map(function($m) { return "{$m->membership_year}: {$m->status}"; })->implode(' | ') : 'No Logs Found';
 
-                $completeHistoryString = $dentist->memberships->isNotEmpty()
-                    ? $dentist->memberships->map(function($membership) {
-                        return "{$membership->membership_year}: {$membership->status}";
-                      })->implode(' | ')
-                    : 'No Logs Found';
-
-                fputcsv($file, [
-                    $dentist->full_name,
-                    $dentist->prc_no,
-                    $dentist->contact_no,
-                    $dentist->email, 
-                    $dentist->clinic_address,
-                    $statusString,
-                    $sustainingFeeStatus,   
-                    $completeHistoryString  
-                ]);
+                fputcsv($file, [$dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email, $dentist->clinic_address, $statusString, $sustainingFeeStatus, $completeHistoryString]);
             }
-
             fclose($file);
         };
 
