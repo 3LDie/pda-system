@@ -22,22 +22,22 @@ class DentistController extends Controller
      */
     public function index(Request $request)
     {
-        // 1. Fetch all users who have a 'member' role along with their logged membership statuses
-        $query = User::where('role', 'member')->with(['memberships' => function($query) {
-            $query->orderBy('membership_year', 'desc'); 
-        }]);
+        // 1. Join users table with dentist_profiles table to get all unified records
+        $query = User::where('users.role', 'member')
+            ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name') // Matches on full name string reference
+            ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
         // 2. Add backend support for the search bar filtering
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
-                $q->where('full_name', 'LIKE', "%{$searchTerm}%")
-                  ->orWhere('prc_no', 'LIKE', "%{$searchTerm}%");
+                $q->where('dentist_profiles.full_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('dentist_profiles.prc_no', 'LIKE', "%{$searchTerm}%");
             });
         }
 
         // 3. Get records ordered by latest creation
-        $dentists = $query->latest()->get();
+        $dentists = $query->latest('users.created_at')->get();
 
         // 📊 4. DYNAMIC ANALYTICS CALCULATIONS (Current Fiscal Year Bracket)
         $currentYear = date('Y');
@@ -88,7 +88,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // ✅ Target correct table
+            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', 
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
             'email_address'    => 'required|email|max:255|unique:users,email', 
@@ -119,7 +119,7 @@ class DentistController extends Controller
                 'role'     => 'member', 
             ]);
 
-            // 1b. Direct insertion into dentist_profiles table (Bypasses missing user_id relation mapping column structural rules)
+            // 1b. Direct insertion into dentist_profiles table (Bypasses missing user_id schema column constraints)
             DB::table('dentist_profiles')->insert([
                 'full_name'      => $validated['full_name'],
                 'profile_image'  => $imagePath,
@@ -177,7 +177,10 @@ class DentistController extends Controller
      */
     public function edit($id)
     {
-        $dentist = User::where('role', 'member')->findOrFail($id);
+        $dentist = User::where('role', 'member')
+            ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name')
+            ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.home_address', 'dentist_profiles.date_of_birth', 'dentist_profiles.profile_image')
+            ->findOrFail($id);
         
         return view('dentists.edit', compact('dentist'));
     }
@@ -189,7 +192,7 @@ class DentistController extends Controller
     {
         $dentist = User::where('role', 'member')->findOrFail($id);
 
-        // Fetch current profile to validate with the old text attributes safely
+        // Fetch current profile using full_name to look up historical unique values safely
         $existingProfile = DB::table('dentist_profiles')->where('full_name', $dentist->name)->first();
         $profileId = $existingProfile ? $existingProfile->id : $id;
 
