@@ -88,7 +88,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
             'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // ✅ Fixed table target
+            'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no', // ✅ Points to correct table
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
             'email_address'    => 'required|email|max:255|unique:users,email', 
@@ -119,9 +119,9 @@ class DentistController extends Controller
                 'role'     => 'member', 
             ]);
 
-            // 1b. Create the Profile data record inside the dentist_profiles table
-            // Note: If your User model relationship name is 'profile' instead of 'dentistProfile', change this line below
-            $dentist->dentistProfile()->create([
+            // 1b. Direct insertion into dentist_profiles table (Bypasses missing Eloquent relationship methods)
+            DB::table('dentist_profiles')->insert([
+                'user_id'        => $dentist->id,
                 'full_name'      => $validated['full_name'],
                 'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
@@ -129,6 +129,8 @@ class DentistController extends Controller
                 'contact_no'     => $validated['contact_no'],
                 'home_address'   => $validated['home_address'],
                 'clinic_address' => $validated['clinic_address'],
+                'created_at'     => now(),
+                'updated_at'     => now(),
             ]);
 
             // 2. Create the associated structural Membership log row mapping to your real schema columns
@@ -191,7 +193,7 @@ class DentistController extends Controller
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
-            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id, // ✅ Fixed table target
+            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $dentist->id, 
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
             'email_address'  => 'required|email|max:255|unique:users,email,' . $dentist->id, 
@@ -201,9 +203,11 @@ class DentistController extends Controller
 
         // Manage photo asset replacements safely
         if ($request->hasFile('profile_image')) {
-            // Delete old avatar from the public disk storage footprint if one exists
-            if ($dentist->profile_image && Storage::disk('public')->exists($dentist->profile_image)) {
-                Storage::disk('public')->delete($dentist->profile_image);
+            // Fetch profile data directly using DB facade to get current image location
+            $currentProfile = DB::table('dentist_profiles')->where('user_id', $dentist->id)->first();
+            
+            if ($currentProfile && $currentProfile->profile_image && Storage::disk('public')->exists($currentProfile->profile_image)) {
+                Storage::disk('public')->delete($currentProfile->profile_image);
             }
 
             // Store new resource asset element path parameters downstream
@@ -216,15 +220,19 @@ class DentistController extends Controller
             'email' => $validated['email_address']
         ]);
 
-        // Sync accompanying details updates
-        $dentist->dentistProfile()->update([
+        // Fetch existing profile to preserve old file structural reference if no replacement was sent
+        $existingProfile = DB::table('dentist_profiles')->where('user_id', $dentist->id)->first();
+
+        // Sync accompanying details updates directly via Direct DB query (Bypasses Eloquent relations)
+        DB::table('dentist_profiles')->where('user_id', $dentist->id)->update([
             'full_name'      => $validated['full_name'],
-            'profile_image'  => $validated['profile_image'] ?? $dentist->dentistProfile->profile_image,
+            'profile_image'  => $validated['profile_image'] ?? ($existingProfile->profile_image ?? null),
             'prc_no'         => $validated['prc_no'],
             'date_of_birth'  => $validated['date_of_birth'],
             'contact_no'     => $validated['contact_no'],
             'home_address'   => $validated['home_address'],
             'clinic_address' => $validated['clinic_address'],
+            'updated_at'     => now(),
         ]);
 
         // Log Update Event
