@@ -6,13 +6,13 @@ use App\Models\DentistProfile;
 use App\Models\PdaMembership;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage; // ✅ Imported for handling file deletions
-use App\Traits\LogsActivity; // ✅ Custom trait namespace import
+use Illuminate\Support\Facades\Storage;
+use App\Traits\LogsActivity;
 use Exception;
 
 class DentistController extends Controller
 {
-    use LogsActivity; // ✅ Background logger engine trait rules
+    use LogsActivity; 
 
     /**
      * Display the dentist directory registry list with analytics.
@@ -84,7 +84,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'full_name'        => 'required|string|max:255',
-            'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240', // ✅ Bumped to 10MB to match the update rule restriction
+            'profile_image'    => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'prc_no'           => 'required|string|max:15|unique:dentist_profiles,prc_no',
             'date_of_birth'    => 'required|date|before:today',
             'contact_no'       => 'required|string|max:20',
@@ -108,7 +108,7 @@ class DentistController extends Controller
             // 1. Create the Dentist Profile Row
             $dentist = DentistProfile::create([
                 'full_name'      => $validated['full_name'],
-                'profile_image'  => $imagePath, // ✅ Assigning the local upload file path string
+                'profile_image'  => $imagePath, // Assigning the local upload file path string
                 'prc_no'         => $validated['prc_no'],
                 'date_of_birth'  => $validated['date_of_birth'],
                 'contact_no'     => $validated['contact_no'],
@@ -125,7 +125,7 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // ✅ Log Registration Event
+            // Log Registration Event
             $this->logAction('REGISTER', 'DentistProfile', "Registered a new profile row for {$dentist->full_name} (PRC: {$dentist->prc_no})");
 
             return redirect()->route('dentists.index')
@@ -175,7 +175,7 @@ class DentistController extends Controller
             'clinic_address' => 'required|string',
         ]);
 
-        // 📸 Manage photo asset replacements safely
+        // Manage photo asset replacements safely
         if ($request->hasFile('profile_image')) {
             // Delete old avatar from the public disk storage footprint if one exists
             if ($dentist->profile_image && Storage::disk('public')->exists($dentist->profile_image)) {
@@ -188,7 +188,7 @@ class DentistController extends Controller
 
         $dentist->update($validated);
 
-        // ✅ Log Update Event
+        // Log Update Event
         $this->logAction('UPDATE', 'DentistProfile', "Updated personal profile records for {$dentist->full_name} (PRC: {$dentist->prc_no})");
 
         return redirect()->route('dentists.index')
@@ -217,13 +217,13 @@ class DentistController extends Controller
             'payment_status'  => 'required|string|max:50',
         ]);
 
-        // 🛠️ Maps form data directly to true columns 'membership_year' and 'status'
+        // Maps form data directly to true columns 'membership_year' and 'status'
         $dentist->memberships()->create([
             'membership_year' => $validated['membership_year'],
             'status'          => $validated['payment_status'],
         ]);
 
-        // ✅ Log Renewal Event
+        // Log Renewal Event
         $this->logAction('RENEW', 'PdaMembership', "Logged a new fiscal year renewal bracket [{$validated['membership_year']}] with status [{$validated['payment_status']}] for {$dentist->full_name}");
 
         return redirect()->route('dentists.index')
@@ -238,14 +238,14 @@ class DentistController extends Controller
         $membership = PdaMembership::findOrFail($id);
         $membership->delete();
 
-        // ✅ Log Deletion Event
+        // Log Deletion Event
         $this->logAction('DELETE', 'PdaMembership', "Permanently removed membership year log row entry ID: [{$id}] for bracket [{$membership->membership_year}]");
 
         return back()->with('success', 'Membership log row successfully removed.');
     }
 
     /**
-     * Export the filtered dentist registry to a CSV spreadsheet.
+     * Export the filtered dentist registry to a CSV spreadsheet with deep history tracking.
      */
     public function export(Request $request)
     {
@@ -265,7 +265,7 @@ class DentistController extends Controller
         $dentists = $query->latest()->get();
 
         // 2. Define the download headers for a CSV file stream
-        $fileName = 'pda_dentist_export_' . date('Y-m-d') . '.csv';
+        $fileName = 'pda_dentist_deep_export_' . date('Y-m-d') . '.csv';
         $headers = [
             "Content-type"        => "text/csv",
             "Content-Disposition" => "attachment; filename=$fileName",
@@ -278,14 +278,40 @@ class DentistController extends Controller
         $callback = function() use ($dentists) {
             $file = fopen('php://output', 'w');
             
-            // Insert spreadsheet column headers
-            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Address', 'Clinic Address', 'Latest Membership Status']);
+            // Insert advanced spreadsheet column headers (added deep metrics)
+            fputcsv($file, [
+                'Full Name', 
+                'PRC Number', 
+                'Contact No.', 
+                'Email Address', 
+                'Clinic Address', 
+                'Latest Membership Status',
+                'Sustaining Fee Status (Current Fiscal Yr)',
+                'Complete Historical Logs (Year: Status)'
+            ]);
+
+            // Calculate current fiscal bracket parameters dynamically matching index logic
+            $currentYear = date('Y');
+            $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2); // Generates "2026-27"
 
             foreach ($dentists as $dentist) {
+                // Find latest single log row entry standard metric
                 $latestMembership = $dentist->memberships->first();
                 $statusString = $latestMembership 
                     ? $latestMembership->membership_year . ' (' . $latestMembership->status . ')'
                     : 'No Logs';
+
+                // Look up sustaining fee target record status block for current fiscal cycle 
+                $currentFeeRecord = $dentist->memberships->where('membership_year', $currentFiscalYear)->first();
+                $sustainingFeeStatus = $currentFeeRecord ? $currentFeeRecord->status : 'No Log for Current Year';
+
+                // Flatten all structural historical year bracket elements into a clean text line string
+                // Example Output: "2026-27: Active | 2025-26: Pending | 1991-92: Active"
+                $completeHistoryString = $dentist->memberships->isNotEmpty()
+                    ? $dentist->memberships->map(function($membership) {
+                        return "{$membership->membership_year}: {$membership->status}";
+                      })->implode(' | ')
+                    : 'No Logs Found';
 
                 fputcsv($file, [
                     $dentist->full_name,
@@ -293,7 +319,9 @@ class DentistController extends Controller
                     $dentist->contact_no,
                     $dentist->email_address,
                     $dentist->clinic_address,
-                    $statusString
+                    $statusString,
+                    $sustainingFeeStatus,   // Isolates payment validation step status
+                    $completeHistoryString  // The complete historical archive map layout string
                 ]);
             }
 
