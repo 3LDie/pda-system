@@ -25,7 +25,7 @@ class DentistController extends Controller
         // 1. Join users table with dentist_profiles table to get all unified records
         $query = User::where('users.role', 'member')
             ->leftJoin('dentist_profiles', 'users.name', '=', 'dentist_profiles.full_name') // Matches on full name string reference
-            ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
+            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
         // 2. Add backend support for the search bar filtering
         if ($request->has('search') && !empty($request->search)) {
@@ -119,8 +119,8 @@ class DentistController extends Controller
                 'role'     => 'member', 
             ]);
 
-            // 1b. Direct insertion into dentist_profiles table (Bypasses missing user_id schema column constraints)
-            DB::table('dentist_profiles')->insert([
+            // 1b. Direct insertion into dentist_profiles table and capture the Auto-Incremented ID
+            $profileId = DB::table('dentist_profiles')->insertGetId([
                 'full_name'      => $validated['full_name'],
                 'email_address'  => $validated['email_address'],
                 'profile_image'  => $imagePath,
@@ -133,12 +133,13 @@ class DentistController extends Controller
                 'updated_at'     => now(),
             ]);
 
-            // 2. Direct insertion into pda_memberships table (✅ FIXED: Bypasses hidden Eloquent user_id mapping attempts)
+            // 2. Direct insertion into pda_memberships table linked via the captured profile ID
             DB::table('pda_memberships')->insert([
-                'membership_year' => $validated['membership_year'], 
-                'status'          => $validated['payment_status'], 
-                'created_at'      => now(),
-                'updated_at'      => now(),
+                'dentist_profile_id' => $profileId, // ✅ FIXED: Feeds correct foreign key structural constraint column
+                'membership_year'    => $validated['membership_year'], 
+                'status'             => $validated['payment_status'], 
+                'created_at'         => now(),
+                'updated_at'         => now(),
             ]);
 
             // 🚀 3. Outbound Payload Hook to your live n8n orchestration flow
@@ -268,12 +269,17 @@ class DentistController extends Controller
             'payment_status'  => 'required|string|max:50',
         ]);
 
-        // Maps form data directly to columns using direct DB query (✅ FIXED: Prevents relation constraint error loops)
+        // Find the profile id relative to the full name layout mapping string reference context
+        $existingProfile = DB::table('dentist_profiles')->where('full_name', $dentist->name)->first();
+        $profileId = $existingProfile ? $existingProfile->id : null;
+
+        // Maps renewal form entries using raw DB inserts to prevent user_id column conflicts
         DB::table('pda_memberships')->insert([
-            'membership_year' => $validated['membership_year'],
-            'status'          => $validated['payment_status'],
-            'created_at'      => now(),
-            'updated_at'      => now(),
+            'dentist_profile_id' => $profileId, // ✅ FIXED: Keeps multi-year renewal logs linked safely
+            'membership_year'    => $validated['membership_year'],
+            'status'             => $validated['payment_status'],
+            'created_at'         => now(),
+            'updated_at'         => now(),
         ]);
 
         // Log Renewal Event
