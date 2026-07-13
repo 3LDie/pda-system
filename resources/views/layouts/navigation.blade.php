@@ -13,9 +13,12 @@
                         {{ __('Dashboard') }}
                     </x-nav-link>
                     
-                    <x-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
-                        {{ __('Dentist Directory') }}
-                    </x-nav-link>
+                    {{-- 🔒 Desktop Guard: Render directory access exclusively for existing Admins --}}
+                    @if(auth()->user()->role === 'admin')
+                        <x-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
+                            {{ __('Dentist Directory') }}
+                        </x-nav-link>
+                    @endif
                 </div>
             </div>
 
@@ -67,9 +70,13 @@
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
-            <x-responsive-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
-                {{ __('Dentist Directory') }}
-            </x-responsive-nav-link>
+
+            {{-- 🔒 Mobile Guard: Hide structural registry pathways from standard members --}}
+            @if(auth()->user()->role === 'admin')
+                <x-responsive-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
+                    {{ __('Dentist Directory') }}
+                </x-responsive-nav-link>
+            @endif
         </div>
 
         <div class="pt-4 pb-1 border-t border-gray-200">
