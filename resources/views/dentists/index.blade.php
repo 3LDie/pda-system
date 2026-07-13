@@ -5,24 +5,24 @@
         </h2>
     </x-slot>
 
-    <div class="py-12" x-data="{ 
-        search: '',
+    <!-- ✅ Swapped outer wrapper to single quotes to safely allow json_encode double quotes inside -->
+    <div class="py-12" x-data='{ 
+        search: "",
         dentists: [
             @foreach($dentists as $dentist)
             {
-                id: '{{ $dentist->id }}',
-                name: {!! json_encode($dentist->full_name ?? '') !!},
-                image: '{{ $dentist->profile_image ? asset('storage/' . $dentist->profile_image) : '' }}',
-                prc: '{{ $dentist->prc_no ?? '' }}',
-                contact: '{{ $dentist->contact_no ?? '' }}',
-                clinic: {!! json_encode($dentist->clinic_address ?? '') !!},
-                memberships: [
-                    {{-- Safely handle log capping array metrics in the template compilation layer --}}
+                "id": "{{ $dentist->id }}",
+                "name": {!! json_encode($dentist->full_name ?? "") !!},
+                "image": "{{ $dentist->profile_image ? asset("storage/" . $dentist->profile_image) : "" }}",
+                "prc": "{{ $dentist->prc_no ?? "" }}",
+                "contact": "{{ $dentist->contact_no ?? "" }}",
+                "clinic": {!! json_encode($dentist->clinic_address ?? "") !!},
+                "memberships": [
                     @foreach($dentist->memberships->take(2) as $membership)
                     { 
-                        id: '{{ $membership->id }}',
-                        year: '{{ $membership->membership_year ?? 'N/A' }}', 
-                        status: {!! json_encode($membership->status ?? 'No Status') !!}
+                        "id": "{{ $membership->id }}",
+                        "year": "{{ $membership->membership_year ?? "N/A" }}", 
+                        "status": {!! json_encode($membership->status ?? "No Status") !!}
                     },
                     @endforeach
                 ]
@@ -41,7 +41,7 @@
         get filteredCount() {
             return this.dentists.filter(d => this.matches(d)).length;
         }
-    }">
+    }'>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
@@ -160,7 +160,7 @@
                                     <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 bg-gray-50/50">
                                         No registered dentists match your current search constraints.
                                     </td>
-                                endtr>
+                                </tr>
                             </template>
                         </tbody>
                     </table>
