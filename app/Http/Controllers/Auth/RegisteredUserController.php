@@ -41,7 +41,6 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'admin', // Forces role to admin instead of default 'clerk'
-            'must_change_password' => 1, // Ensures security compliance for new admin
         ]);
 
         event(new Registered($user));
