@@ -11,7 +11,6 @@
 <body>
     <h1>Change Your Password</h1>
 
-    {{-- Display validation errors --}}
     @if ($errors->any())
         <div class="error">
             <ul>
