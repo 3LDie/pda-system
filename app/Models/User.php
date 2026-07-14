@@ -23,6 +23,7 @@ use Illuminate\Notifications\Notifiable;
     'home_address', 
     'clinic_address', 
     'profile_image'
+    'must_change_password'
 ])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
