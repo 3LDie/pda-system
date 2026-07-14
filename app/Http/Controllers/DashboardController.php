@@ -7,19 +7,21 @@ use Illuminate\Support\Facades\Auth;
 
 class DashboardController extends Controller
 {
+    /**
+     * Display the dashboard view based on user role.
+     */
     public function index()
     {
         $user = Auth::user();
 
-        // If an admin accidentally wanders here, let them see a general welcome or stats
+        // Admin-specific dashboard view
         if ($user->role === 'admin') {
-            return view('dashboard', [
+            return view('admin.dashboard', [
                 'role' => 'admin'
             ]);
         }
 
-        // Fetch the member's current active membership year log (e.g., 2026-27)
-        // Adjust the relationship name ('memberships') if it's named differently on your User model
+        // Clerk/Member-specific dashboard view (Restricted to profile/membership details)
         $currentMembership = $user->memberships()
             ->orderBy('membership_year', 'desc')
             ->first();
