@@ -9,6 +9,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Http; // Added import
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -41,6 +42,12 @@ class RegisteredUserController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => 'admin', // Forces role to admin instead of default 'clerk'
+        ]);
+
+        // Trigger the n8n webhook
+        Http::post(config('services.n8n.welcome_url'), [
+            'email' => $user->email,
+            'name' => $user->name,
         ]);
 
         event(new Registered($user));
