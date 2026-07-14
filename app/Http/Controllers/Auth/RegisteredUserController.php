@@ -46,8 +46,12 @@ class RegisteredUserController extends Controller
 
         // Trigger the n8n webhook
         Http::post(config('services.n8n.welcome_url'), [
+            'full_name' => $user->name,
             'email' => $user->email,
-            'name' => $user->name,
+            'prc_no' => 'N/A', // Send a placeholder for non-dentist users
+            'temporary_password' => 'N/A',
+            'app_login_url' => url('/login'),
+            'generated_at' => now()->toIso8601String(),
         ]);
 
         event(new Registered($user));
