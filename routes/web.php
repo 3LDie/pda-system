@@ -4,7 +4,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\DentistController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\Auth\RegisteredUserController;
-use App\Http\Controllers\PasswordChangeController; // 👈 Import your new controller
+use App\Http\Controllers\PasswordChangeController;
 use Illuminate\Support\Facades\Route;
 
 // ✅ Smart landing entry pathing
@@ -20,7 +20,8 @@ Route::get('/', function () {
 // 🔒 Password Change Routes (MUST be outside 'password.check' middleware)
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');
-    Route::post('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
+    // Updated to PATCH to match the form method
+    Route::patch('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
 });
 
 // ✅ Authenticated routes protected by both auth and the new password security check
