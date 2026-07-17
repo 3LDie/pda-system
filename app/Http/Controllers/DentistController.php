@@ -224,4 +224,40 @@ class DentistController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    public function renew($id)
+    {
+        $dentist = User::where('role', 'member')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name')
+            ->findOrFail($id);
+
+        return view('dentists.renew', compact('dentist'));
+    }
+
+    public function storeRenewal(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'membership_year' => 'required|string|max:50',
+            'status'          => 'required|string',
+        ]);
+
+        $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
+
+        DB::table('pda_memberships')->insert([
+            'dentist_profile_id' => $profile->id,
+            'membership_year'    => $validated['membership_year'],
+            'status'             => $validated['status'],
+            'created_at'         => now(),
+            'updated_at'         => now(),
+        ]);
+
+        return redirect()->route('dentists.index')->with('success', 'Membership renewed successfully!');
+    }
+
+    public function destroyMembership($id)
+    {
+        DB::table('pda_memberships')->where('id', $id)->delete();
+        return back()->with('success', 'Membership record deleted.');
+    }
 }
