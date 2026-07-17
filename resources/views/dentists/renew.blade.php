@@ -17,7 +17,7 @@
                 <form action="{{ route('dentists.storeRenewal', $dentist->id) }}" method="POST" class="space-y-6">
                     @csrf
 
-                    <!-- Flexible Membership Year Input -->
+                    <!-- Membership Year: Flexible Input using Datalist -->
                     <div>
                         <label for="membership_year" class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
                         <input list="year-options" 
@@ -29,8 +29,8 @@
                                class="mt-1 block w-full rounded-md shadow-sm transition duration-150 ease-in-out text-sm @error('membership_year') border-red-300 focus:border-red-500 focus:ring-red-500 @else border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @enderror">
 
                         <datalist id="year-options">
-                            @php $currentYear = date('Y'); @endphp
-                            @for ($i = $currentYear + 1; $i >= 2020; $i--)
+                            @php $currentYear = (int)date('Y'); @endphp
+                            @for ($i = $currentYear + 2; $i >= 2020; $i--)
                                 @php $bracket = $i . '-' . substr($i + 1, -2); @endphp
                                 <option value="{{ $bracket }}"></option>
                             @endfor
@@ -65,7 +65,6 @@
                         </button>
                     </div>
                 </form>
-
             </div>
         </div>
     </div>
