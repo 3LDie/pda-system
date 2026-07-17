@@ -196,7 +196,7 @@ class DentistController extends Controller
 
         $callback = function() use ($dentists) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Addr', 'Clinic Addr', 'Latest Membership', 'Sustaining', 'Complete Historical Logs (Year: Status)']);
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Addr', 'Clinic Addr', 'Latest Membership', 'Sustaining Fee Status (Current Fiscal Yr)', 'Complete Historical Logs (Year: Status)']);
             
             foreach ($dentists as $dentist) {
                 $memberships = DB::table('pda_memberships')
@@ -205,11 +205,21 @@ class DentistController extends Controller
                     ->get();
 
                 $latest = $memberships->first();
+                
+                // Populates Sustaining status if latest is Active
+                $sustaining = $latest && str_contains($latest->status, 'Active') ? $latest->membership_year . ' (' . $latest->status . ')' : 'N/A';
+                
                 $logString = $memberships->map(fn($m) => $m->membership_year . ': ' . $m->status)->implode(' | ');
 
                 fputcsv($file, [
-                    $dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email, 
-                    $dentist->clinic_address, $latest ? $latest->membership_year : 'N/A', '', $logString
+                    $dentist->full_name, 
+                    $dentist->prc_no, 
+                    $dentist->contact_no, 
+                    $dentist->email, 
+                    $dentist->clinic_address, 
+                    $latest ? $latest->membership_year : 'N/A', 
+                    $sustaining, 
+                    $logString
                 ]);
             }
             fclose($file);
