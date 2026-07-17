@@ -19,8 +19,9 @@ class DentistController extends Controller
 
     public function index(Request $request)
     {
+        // Changed to join (inner join) to exclude users without profiles
         $query = User::where('users.role', 'member')
-            ->leftJoin('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
         if ($request->has('search') && !empty($request->search)) {
@@ -55,15 +56,6 @@ class DentistController extends Controller
             })->count(),
         ];
 
-        $stats['inactive_members'] = $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
-            $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
-                ->where('membership_year', $currentFiscalYear)
-                ->filter(function($m) {
-                    return str_contains($m->status, 'Active') || $m->status === 'Pending';
-                })->isNotEmpty();
-            return !$hasActiveOrPending;
-        })->count();
-
         return view('dentists.index', compact('dentists', 'stats'));
     }
 
@@ -85,16 +77,10 @@ class DentistController extends Controller
         ]);
 
         DB::beginTransaction();
-        $imagePath = null;
-
         try {
-            if ($request->hasFile('profile_image')) {
-                $imagePath = $request->file('profile_image')->store('profile_images', 'public');
-            }
-
+            $imagePath = $request->hasFile('profile_image') ? $request->file('profile_image')->store('profile_images', 'public') : null;
             $temporaryPassword = Str::random(10);
             
-            // 1. Create the user account for login
             $dentist = User::create([
                 'name'     => $validated['full_name'], 
                 'email'    => $validated['email_address'],
@@ -102,9 +88,8 @@ class DentistController extends Controller
                 'role'     => 'member', 
             ]);
 
-            // 2. Create the profile and link it using user_id
             $profileId = DB::table('dentist_profiles')->insertGetId([
-                'user_id'        => $dentist->id, // Vital link
+                'user_id'        => $dentist->id,
                 'full_name'      => $validated['full_name'],
                 'email_address'  => $validated['email_address'],
                 'profile_image'  => $imagePath,
@@ -117,7 +102,6 @@ class DentistController extends Controller
                 'updated_at'     => now(),
             ]);
 
-            // 3. Create membership record
             DB::table('pda_memberships')->insert([
                 'dentist_profile_id' => $profileId, 
                 'membership_year'    => $validated['membership_year'], 
@@ -128,7 +112,6 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // 4. Trigger webhook
             Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
                 'full_name'          => $validated['full_name'],
                 'email'              => $dentist->email,
@@ -138,16 +121,9 @@ class DentistController extends Controller
                 'generated_at'       => now()->toIso8601String(),
             ]);
 
-            $this->logAction('REGISTER', 'User', "Registered a new member account for {$validated['full_name']} (PRC: {$validated['prc_no']})");
-
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
-
         } catch (Exception $e) {
             DB::rollBack();
-            if ($imagePath && Storage::disk('public')->exists($imagePath)) {
-                Storage::disk('public')->delete($imagePath);
-            }
-            logger($e->getMessage()); 
             return back()->withInput()->withErrors(['error' => 'Database failure: ' . $e->getMessage()]);
         }
     }
@@ -155,7 +131,7 @@ class DentistController extends Controller
     public function edit($id)
     {
         $dentist = User::where('role', 'member')
-            ->leftJoin('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.home_address', 'dentist_profiles.date_of_birth', 'dentist_profiles.profile_image')
             ->findOrFail($id);
         return view('dentists.edit', compact('dentist'));
@@ -199,61 +175,33 @@ class DentistController extends Controller
             'updated_at'     => now(),
         ]);
 
-        Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
-            'full_name'          => $validated['full_name'],
-            'email'              => $validated['email_address'],
-            'prc_no'             => $validated['prc_no'],
-            'temporary_password' => 'CHANGED_BY_ADMIN',
-            'app_login_url'      => url('/login'),
-            'generated_at'       => now()->toIso8601String(),
-        ]);
-
-        $this->logAction('UPDATE', 'User', "Updated personal account records for {$validated['full_name']} (PRC: {$validated['prc_no']})");
-
         return redirect()->route('dentists.index')->with('success', 'Dentist profile updated successfully!');
-    }
-
-    public function renew($id)
-    {
-        $dentist = User::where('role', 'member')->findOrFail($id);
-        return view('dentists.renew', compact('dentist'));
-    }
-
-    public function storeRenewal(Request $request, $id)
-    {
-        $dentist = User::where('role', 'member')->findOrFail($id);
-        $validated = $request->validate([
-            'membership_year' => 'required|string|max:20',
-            'payment_status'  => 'required|string|max:50',
-        ]);
-
-        $existingProfile = DB::table('dentist_profiles')->where('user_id', $dentist->id)->first();
-        $profileId = $existingProfile ? $existingProfile->id : null;
-
-        DB::table('pda_memberships')->insert([
-            'dentist_profile_id' => $profileId, 
-            'membership_year'    => $validated['membership_year'],
-            'status'             => $validated['payment_status'],
-            'created_at'         => now(),
-            'updated_at'         => now(),
-        ]);
-
-        $this->logAction('RENEW', 'PdaMembership', "Logged renewal [{$validated['membership_year']}] for {$dentist->name}");
-
-        return redirect()->route('dentists.index')->with('success', 'Membership year successfully logged.');
-    }
-
-    public function destroyMembership($id)
-    {
-        $membership = PdaMembership::findOrFail($id);
-        $membership->delete();
-        return back()->with('success', 'Membership log row successfully removed.');
     }
 
     public function export(Request $request)
     {
-        // Export logic remains the same...
-        $query = User::where('role', 'member')->with(['memberships']);
-        // ... (rest of export logic)
+        $dentists = User::where('role', 'member')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->get();
+
+        $fileName = 'pda_export_' . date('Y-m-d') . '.csv';
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($dentists) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email']);
+            foreach ($dentists as $dentist) {
+                fputcsv($file, [$dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
