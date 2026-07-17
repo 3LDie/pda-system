@@ -15,14 +15,17 @@ class DashboardController extends Controller
         $user = Auth::user();
 
         // Admin-specific dashboard view
+        // Admins are directed here by the AuthenticatedSessionController 
+        // to manage the system via the admin.dashboard view.
         if ($user->role === 'admin') {
             return view('admin.dashboard', [
                 'role' => 'admin'
             ]);
         }
 
-        // Clerk/Member-specific dashboard view (Restricted to profile/membership details)
-        // Ensure the 'memberships' relationship is defined in your User model
+        // Clerk/Member-specific dashboard view
+        // Members land here after login, restricted to their own profile/membership details.
+        // Ensure the 'memberships' relationship is defined in your User model.
         $currentMembership = $user->memberships()
             ->orderBy('membership_year', 'desc')
             ->first();

@@ -28,8 +28,12 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        // ✅ Modified to route the admin immediately to the directory layout index grid view
-        return redirect()->intended(route('dentists.index', absolute: false));
+        // Check user role to determine redirection path
+        if (Auth::user()->role === 'admin') {
+            return redirect()->intended(route('dentists.index', absolute: false));
+        }
+
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
