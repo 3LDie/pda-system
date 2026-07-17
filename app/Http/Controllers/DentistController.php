@@ -66,10 +66,7 @@ class DentistController extends Controller
         return view('dentists.index', compact('dentists', 'stats'));
     }
 
-    public function create() 
-    { 
-        return view('dentists.create'); 
-    }
+    public function create() { return view('dentists.create'); }
 
     public function store(Request $request)
     {
@@ -121,16 +118,6 @@ class DentistController extends Controller
             ]);
 
             DB::commit();
-
-            Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
-                'full_name'          => $validated['full_name'],
-                'email'              => $dentist->email,
-                'prc_no'             => $validated['prc_no'],
-                'temporary_password' => $temporaryPassword,
-                'app_login_url'      => url('/login'),
-                'generated_at'       => now()->toIso8601String(),
-            ]);
-
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
         } catch (Exception $e) {
             DB::rollBack();
@@ -205,19 +192,25 @@ class DentistController extends Controller
             ->get();
 
         $fileName = 'pda_export_' . date('Y-m-d') . '.csv';
-        $headers = [
-            "Content-type"        => "text/csv",
-            "Content-Disposition" => "attachment; filename=$fileName",
-            "Pragma"              => "no-cache",
-            "Cache-Control"       => "must-revalidate",
-            "Expires"             => "0"
-        ];
+        $headers = ["Content-type" => "text/csv", "Content-Disposition" => "attachment; filename=$fileName"];
 
         $callback = function() use ($dentists) {
             $file = fopen('php://output', 'w');
-            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email']);
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email Addr', 'Clinic Addr', 'Latest Membership', 'Sustaining', 'Complete Historical Logs (Year: Status)']);
+            
             foreach ($dentists as $dentist) {
-                fputcsv($file, [$dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email]);
+                $memberships = DB::table('pda_memberships')
+                    ->where('dentist_profile_id', $dentist->profile_id)
+                    ->orderBy('membership_year', 'desc')
+                    ->get();
+
+                $latest = $memberships->first();
+                $logString = $memberships->map(fn($m) => $m->membership_year . ': ' . $m->status)->implode(' | ');
+
+                fputcsv($file, [
+                    $dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email, 
+                    $dentist->clinic_address, $latest ? $latest->membership_year : 'N/A', '', $logString
+                ]);
             }
             fclose($file);
         };
@@ -231,7 +224,6 @@ class DentistController extends Controller
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name')
             ->findOrFail($id);
-
         return view('dentists.renew', compact('dentist'));
     }
 
@@ -239,7 +231,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'membership_year' => 'required|string|max:50',
-            'payment_status'          => 'required|string',
+            'payment_status'  => 'required|string',
         ]);
 
         $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
