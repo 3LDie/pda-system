@@ -16,7 +16,6 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Personal Details</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             
-                            <!-- Profile Image Upload -->
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Profile Image</label>
                                 <input type="file" 
@@ -68,6 +67,7 @@
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Initial PDA Membership Log</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            
                             <!-- Flexible Membership Year Input -->
                             <div>
                                 <label for="membership_year" class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
@@ -77,6 +77,7 @@
                                        value="{{ old('membership_year') }}" 
                                        required 
                                        placeholder="e.g. {{ date('Y') }}-{{ substr(date('Y') + 1, -2) }}"
+                                       autocomplete="off"
                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                                 
                                 <datalist id="year-options">
@@ -94,7 +95,7 @@
 
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Payment Status</label>
-                                <select name="payment_status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
+                                <select name="payment_status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
                                     <option value="Active" {{ old('payment_status') == 'Active' ? 'selected' : '' }}>Active (Paid)</option>
                                     <option value="Pending" {{ old('payment_status') == 'Pending' ? 'selected' : '' }}>Pending (Unpaid)</option>
                                 </select>
