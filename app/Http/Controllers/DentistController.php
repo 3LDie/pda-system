@@ -239,7 +239,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'membership_year' => 'required|string|max:50',
-            'status'          => 'required|string',
+            'payment_status'          => 'required|string',
         ]);
 
         $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
@@ -247,7 +247,7 @@ class DentistController extends Controller
         DB::table('pda_memberships')->insert([
             'dentist_profile_id' => $profile->id,
             'membership_year'    => $validated['membership_year'],
-            'status'             => $validated['status'],
+            'status'             => $validated['payment_status'],
             'created_at'         => now(),
             'updated_at'         => now(),
         ]);
