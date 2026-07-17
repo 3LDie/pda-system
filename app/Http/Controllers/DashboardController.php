@@ -22,6 +22,7 @@ class DashboardController extends Controller
         }
 
         // Clerk/Member-specific dashboard view (Restricted to profile/membership details)
+        // Ensure the 'memberships' relationship is defined in your User model
         $currentMembership = $user->memberships()
             ->orderBy('membership_year', 'desc')
             ->first();
