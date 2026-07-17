@@ -17,28 +17,31 @@
                 <form action="{{ route('dentists.storeRenewal', $dentist->id) }}" method="POST" class="space-y-6">
                     @csrf
 
+                    <!-- Flexible Membership Year Input -->
                     <div>
                         <label for="membership_year" class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
-                        <select name="membership_year" id="membership_year" required 
-                                class="mt-1 block w-full rounded-md shadow-sm transition duration-150 ease-in-out text-sm @error('membership_year') border-red-300 focus:border-red-500 focus:ring-red-500 @else border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @enderror">
-                            <option value="">-- Select Subscription Year --</option>
-                            @php
-                                $currentYear = date('Y');
-                            @endphp
+                        <input list="year-options" 
+                               name="membership_year" 
+                               id="membership_year" 
+                               value="{{ old('membership_year') }}" 
+                               required 
+                               placeholder="e.g. {{ date('Y') }}-{{ substr(date('Y') + 1, -2) }}"
+                               class="mt-1 block w-full rounded-md shadow-sm transition duration-150 ease-in-out text-sm @error('membership_year') border-red-300 focus:border-red-500 focus:ring-red-500 @else border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 @enderror">
+
+                        <datalist id="year-options">
+                            @php $currentYear = date('Y'); @endphp
                             @for ($i = $currentYear + 1; $i >= 2020; $i--)
-                                @php 
-                                    $bracket = $i . '-' . substr($i + 1, -2); 
-                                @endphp
-                                <option value="{{ $bracket }}" {{ old('membership_year') == $bracket ? 'selected' : '' }}>
-                                    {{ $bracket }}
-                                </option>
+                                @php $bracket = $i . '-' . substr($i + 1, -2); @endphp
+                                <option value="{{ $bracket }}"></option>
                             @endfor
-                        </select>
+                        </datalist>
+
                         @error('membership_year')
                             <p class="text-red-500 text-xs mt-1 font-medium">⚠️ {{ $message }}</p>
                         @enderror
                     </div>
 
+                    <!-- Payment Status -->
                     <div>
                         <label for="payment_status" class="block text-sm font-medium text-gray-700">Payment Status</label>
                         <select name="payment_status" id="payment_status" required 
