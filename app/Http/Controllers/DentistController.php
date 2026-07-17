@@ -38,7 +38,7 @@ class DentistController extends Controller
 
         $dentists = $query->latest('users.created_at')->get();
         
-        // Initialize stats as empty for members to prevent unauthorized access errors
+        // Initialize stats
         $stats = ['total_dentists' => 0, 'active_members' => 0, 'pending_members' => 0, 'inactive_members' => 0];
 
         // Only calculate stats if the user is an admin
@@ -78,7 +78,6 @@ class DentistController extends Controller
         return view('dentists.index', compact('dentists', 'stats'));
     }
 
-    // ... (rest of the methods: create, store, edit, update, export, renew, storeRenewal, destroyMembership remain unchanged)
     public function create() { return view('dentists.create'); }
 
     public function store(Request $request)
@@ -261,16 +260,14 @@ class DentistController extends Controller
 
         $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
 
+        // Syntax fixed: Removed the orphaned ->update block
         DB::table('pda_memberships')->insert([
             'dentist_profile_id' => $profile->id,
             'membership_year'    => $validated['membership_year'],
             'status'             => $validated['payment_status'],
             'created_at'         => now(),
-            ->update([
-                'membership_year' => $validated['membership_year'],
-                'status'          => $validated['payment_status'],
-                'updated_at'      => now(),
-            ]);
+            'updated_at'         => now(),
+        ]);
 
         return redirect()->route('dentists.index')->with('success', 'Membership renewed successfully!');
     }
