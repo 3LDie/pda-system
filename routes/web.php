@@ -17,10 +17,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 🔒 Password Change Routes (MUST be outside 'password.check' middleware)
+// 🔒 Password Change Routes
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');
-    // Updated to PATCH to match the form method
     Route::patch('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
 });
 
@@ -35,12 +34,14 @@ Route::middleware(['auth', 'password.check'])->group(function () {
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+    // 🔓 Accessible by both Admin and Member (Moved out of admin middleware)
+    Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
+
     // 🔒 STRICT ADMIN LOCKDOWN GROUP
     Route::middleware('admin')->group(function () {
         Route::get('/admin/register', [RegisteredUserController::class, 'create'])->name('register');
         Route::post('/admin/register', [RegisteredUserController::class, 'store']);
 
-        Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
         Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
         Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
         Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');

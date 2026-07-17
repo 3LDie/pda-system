@@ -23,6 +23,11 @@ class DentistController extends Controller
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
+        // Restrict members to their own data only
+        if (auth()->user()->role === 'member') {
+            $query->where('users.id', auth()->id());
+        }
+
         if ($request->has('search') && !empty($request->search)) {
             $searchTerm = $request->search;
             $query->where(function($q) use ($searchTerm) {
@@ -207,7 +212,6 @@ class DentistController extends Controller
 
                 $latest = $memberships->first();
                 
-                // Corrected ternary syntax
                 $sustaining = ($latest && (str_contains($latest->status, 'Active') || str_contains($latest->status, 'Paid'))) 
                     ? $latest->membership_year . ' (' . $latest->status . ')' 
                     : 'N/A';
