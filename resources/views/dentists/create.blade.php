@@ -9,7 +9,6 @@
         <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                 
-                <!-- 💡 Added enctype multipart property for handling file streams -->
                 <form action="{{ route('dentists.store') }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                     @csrf
 
@@ -17,7 +16,7 @@
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Personal Details</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             
-                            <!-- 📸 Profile Image Upload Input Slot -->
+                            <!-- Profile Image Upload -->
                             <div class="md:col-span-2">
                                 <label class="block text-sm font-medium text-gray-700">Profile Image</label>
                                 <input type="file" 
@@ -69,29 +68,30 @@
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 mb-4">Initial PDA Membership Log</h3>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <!-- Flexible Membership Year Input -->
                             <div>
                                 <label for="membership_year" class="block text-sm font-medium text-gray-700">Membership Year Bracket</label>
-                                <select name="membership_year" id="membership_year" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
-                                    @php
-                                        // Generates a historical range up to incoming active cycles relative to current context
-                                        $currentYear = (int) date('Y');
-                                        $defaultYearBracket = "{$currentYear}-" . substr($currentYear + 1, -2);
-                                        $selectedYear = old('membership_year', $defaultYearBracket);
-                                    @endphp
-
+                                <input list="year-options" 
+                                       name="membership_year" 
+                                       id="membership_year" 
+                                       value="{{ old('membership_year') }}" 
+                                       required 
+                                       placeholder="e.g. {{ date('Y') }}-{{ substr(date('Y') + 1, -2) }}"
+                                       class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                                
+                                <datalist id="year-options">
+                                    @php $currentYear = (int) date('Y'); @endphp
                                     @for ($i = -5; $i <= 2; $i++)
                                         @php
                                             $startYear = $currentYear + $i;
-                                            $endYearShort = substr($startYear + 1, -2);
-                                            $yearOption = "{$startYear}-{$endYearShort}";
+                                            $yearOption = "{$startYear}-" . substr($startYear + 1, -2);
                                         @endphp
-                                        <option value="{{ $yearOption }}" {{ $selectedYear === $yearOption ? 'selected' : '' }}>
-                                            {{ $yearOption }}
-                                        </option>
+                                        <option value="{{ $yearOption }}"></option>
                                     @endfor
-                                </select>
+                                </datalist>
                                 @error('membership_year') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
                             </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Payment Status</label>
                                 <select name="payment_status" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500">
