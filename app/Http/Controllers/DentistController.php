@@ -17,7 +17,59 @@ class DentistController extends Controller
 {
     use LogsActivity; 
 
-    // ... [keep index, create methods as they are] ...
+    public function index(Request $request)
+    {
+        $query = User::where('users.role', 'member')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
+
+        if ($request->has('search') && !empty($request->search)) {
+            $searchTerm = $request->search;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('dentist_profiles.full_name', 'LIKE', "%{$searchTerm}%")
+                  ->orWhere('dentist_profiles.prc_no', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        $dentists = $query->latest('users.created_at')->get();
+        $currentYear = date('Y');
+        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
+        
+        $profileIds = $dentists->pluck('profile_id')->filter()->toArray();
+        $allMemberships = DB::table('pda_memberships')
+            ->whereIn('dentist_profile_id', $profileIds)
+            ->get();
+
+        $stats = [
+            'total_dentists' => $dentists->count(),
+            'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                      ->where('membership_year', $currentFiscalYear)
+                                      ->filter(function($m) { return str_contains($m->status, 'Active'); })
+                                      ->isNotEmpty();
+            })->count(),
+            'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
+                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                      ->where('status', 'Pending')
+                                      ->isNotEmpty();
+            })->count(),
+            'inactive_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                    ->where('membership_year', $currentFiscalYear)
+                    ->filter(function($m) {
+                        return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                    })->isNotEmpty();
+                return !$hasActiveOrPending;
+            })->count(),
+        ];
+
+        return view('dentists.index', compact('dentists', 'stats'));
+    }
+
+    public function create() 
+    { 
+        return view('dentists.create'); 
+    }
 
     public function store(Request $request)
     {
@@ -69,11 +121,30 @@ class DentistController extends Controller
             ]);
 
             DB::commit();
+
+            Http::post('https://n8n-production-385ae.up.railway.app/webhook/pda-member-welcome', [
+                'full_name'          => $validated['full_name'],
+                'email'              => $dentist->email,
+                'prc_no'             => $validated['prc_no'],
+                'temporary_password' => $temporaryPassword,
+                'app_login_url'      => url('/login'),
+                'generated_at'       => now()->toIso8601String(),
+            ]);
+
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
         } catch (Exception $e) {
             DB::rollBack();
             return back()->withInput()->withErrors(['error' => 'Database failure: ' . $e->getMessage()]);
         }
+    }
+
+    public function edit($id)
+    {
+        $dentist = User::where('role', 'member')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->select('users.*', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.home_address', 'dentist_profiles.date_of_birth', 'dentist_profiles.profile_image')
+            ->findOrFail($id);
+        return view('dentists.edit', compact('dentist'));
     }
 
     public function update(Request $request, $id)
@@ -116,7 +187,6 @@ class DentistController extends Controller
             'updated_at'     => now(),
         ]);
 
-        // Updated to sync membership details
         DB::table('pda_memberships')
             ->where('dentist_profile_id', $profileId)
             ->update([
@@ -126,5 +196,32 @@ class DentistController extends Controller
             ]);
 
         return redirect()->route('dentists.index')->with('success', 'Dentist profile updated successfully!');
+    }
+
+    public function export(Request $request)
+    {
+        $dentists = User::where('role', 'member')
+            ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->get();
+
+        $fileName = 'pda_export_' . date('Y-m-d') . '.csv';
+        $headers = [
+            "Content-type"        => "text/csv",
+            "Content-Disposition" => "attachment; filename=$fileName",
+            "Pragma"              => "no-cache",
+            "Cache-Control"       => "must-revalidate",
+            "Expires"             => "0"
+        ];
+
+        $callback = function() use ($dentists) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, ['Full Name', 'PRC Number', 'Contact No.', 'Email']);
+            foreach ($dentists as $dentist) {
+                fputcsv($file, [$dentist->full_name, $dentist->prc_no, $dentist->contact_no, $dentist->email]);
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }
