@@ -19,7 +19,6 @@ class DentistController extends Controller
 
     public function index(Request $request)
     {
-        // Changed to join (inner join) to exclude users without profiles
         $query = User::where('users.role', 'member')
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
@@ -41,6 +40,7 @@ class DentistController extends Controller
             ->whereIn('dentist_profile_id', $profileIds)
             ->get();
 
+        // Stats array now includes inactive_members correctly initialized
         $stats = [
             'total_dentists' => $dentists->count(),
             'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
@@ -53,6 +53,14 @@ class DentistController extends Controller
                 return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                                       ->where('status', 'Pending')
                                       ->isNotEmpty();
+            })->count(),
+            'inactive_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                    ->where('membership_year', $currentFiscalYear)
+                    ->filter(function($m) {
+                        return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                    })->isNotEmpty();
+                return !$hasActiveOrPending;
             })->count(),
         ];
 
