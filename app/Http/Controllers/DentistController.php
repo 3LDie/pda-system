@@ -37,40 +37,48 @@ class DentistController extends Controller
         }
 
         $dentists = $query->latest('users.created_at')->get();
-        $currentYear = date('Y');
-        $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
         
-        $profileIds = $dentists->pluck('profile_id')->filter()->toArray();
-        $allMemberships = DB::table('pda_memberships')
-            ->whereIn('dentist_profile_id', $profileIds)
-            ->get();
+        // Initialize stats as empty for members to prevent unauthorized access errors
+        $stats = ['total_dentists' => 0, 'active_members' => 0, 'pending_members' => 0, 'inactive_members' => 0];
 
-        $stats = [
-            'total_dentists' => $dentists->count(),
-            'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
-                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
-                                      ->where('membership_year', $currentFiscalYear)
-                                      ->filter(function($m) { return str_contains($m->status, 'Active'); })
-                                      ->isNotEmpty();
-            })->count(),
-            'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
-                return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
-                                      ->where('status', 'Pending')
-                                      ->isNotEmpty();
-            })->count(),
-            'inactive_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
-                $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
-                    ->where('membership_year', $currentFiscalYear)
-                    ->filter(function($m) {
-                        return str_contains($m->status, 'Active') || $m->status === 'Pending';
-                    })->isNotEmpty();
-                return !$hasActiveOrPending;
-            })->count(),
-        ];
+        // Only calculate stats if the user is an admin
+        if (auth()->user()->role === 'admin') {
+            $currentYear = date('Y');
+            $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
+            
+            $profileIds = $dentists->pluck('profile_id')->filter()->toArray();
+            $allMemberships = DB::table('pda_memberships')
+                ->whereIn('dentist_profile_id', $profileIds)
+                ->get();
+
+            $stats = [
+                'total_dentists' => $dentists->count(),
+                'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                    return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                          ->where('membership_year', $currentFiscalYear)
+                                          ->filter(function($m) { return str_contains($m->status, 'Active'); })
+                                          ->isNotEmpty();
+                })->count(),
+                'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
+                    return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                                          ->where('status', 'Pending')
+                                          ->isNotEmpty();
+                })->count(),
+                'inactive_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
+                    $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
+                        ->where('membership_year', $currentFiscalYear)
+                        ->filter(function($m) {
+                            return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                        })->isNotEmpty();
+                    return !$hasActiveOrPending;
+                })->count(),
+            ];
+        }
 
         return view('dentists.index', compact('dentists', 'stats'));
     }
 
+    // ... (rest of the methods: create, store, edit, update, export, renew, storeRenewal, destroyMembership remain unchanged)
     public function create() { return view('dentists.create'); }
 
     public function store(Request $request)
@@ -258,8 +266,11 @@ class DentistController extends Controller
             'membership_year'    => $validated['membership_year'],
             'status'             => $validated['payment_status'],
             'created_at'         => now(),
-            'updated_at'         => now(),
-        ]);
+            ->update([
+                'membership_year' => $validated['membership_year'],
+                'status'          => $validated['payment_status'],
+                'updated_at'      => now(),
+            ]);
 
         return redirect()->route('dentists.index')->with('success', 'Membership renewed successfully!');
     }
