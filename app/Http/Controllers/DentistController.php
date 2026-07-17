@@ -187,8 +187,10 @@ class DentistController extends Controller
 
     public function export(Request $request)
     {
+        // Updated select to ensure profile_id is present
         $dentists = User::where('role', 'member')
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
+            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address')
             ->get();
 
         $fileName = 'pda_export_' . date('Y-m-d') . '.csv';
@@ -205,10 +207,7 @@ class DentistController extends Controller
                     ->get();
 
                 $latest = $memberships->first();
-                
-                // Populates Sustaining status if latest is Active
                 $sustaining = $latest && str_contains($latest->status, 'Active') ? $latest->membership_year . ' (' . $latest->status . ')' : 'N/A';
-                
                 $logString = $memberships->map(fn($m) => $m->membership_year . ': ' . $m->status)->implode(' | ');
 
                 fputcsv($file, [
