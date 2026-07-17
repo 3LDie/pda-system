@@ -187,7 +187,6 @@ class DentistController extends Controller
 
     public function export(Request $request)
     {
-        // Updated select to ensure profile_id is present
         $dentists = User::where('role', 'member')
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address')
@@ -207,7 +206,12 @@ class DentistController extends Controller
                     ->get();
 
                 $latest = $memberships->first();
-                $sustaining = $latest && str_contains($latest->status, 'Active') ? $latest->membership_year . ' (' . $latest->status . ')' : 'N/A';
+                
+                // Corrected ternary syntax
+                $sustaining = ($latest && (str_contains($latest->status, 'Active') || str_contains($latest->status, 'Paid'))) 
+                    ? $latest->membership_year . ' (' . $latest->status . ')' 
+                    : 'N/A';
+                
                 $logString = $memberships->map(fn($m) => $m->membership_year . ': ' . $m->status)->implode(' | ');
 
                 fputcsv($file, [
