@@ -23,7 +23,6 @@ class DentistController extends Controller
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
             ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
 
-        // Restrict members to their own data only
         if (auth()->user()->role === 'member') {
             $query->where('users.id', auth()->id());
         }
@@ -38,10 +37,8 @@ class DentistController extends Controller
 
         $dentists = $query->latest('users.created_at')->get();
         
-        // Initialize stats
         $stats = ['total_dentists' => 0, 'active_members' => 0, 'pending_members' => 0, 'inactive_members' => 0];
 
-        // Only calculate stats if the user is an admin
         if (auth()->user()->role === 'admin') {
             $currentYear = date('Y');
             $currentFiscalYear = $currentYear . '-' . substr($currentYear + 1, -2);
@@ -150,12 +147,15 @@ class DentistController extends Controller
     {
         $dentist = User::where('role', 'member')->findOrFail($id);
         $existingProfile = DB::table('dentist_profiles')->where('user_id', $dentist->id)->first();
-        $profileId = $existingProfile ? $existingProfile->id : $id;
+
+        if (!$existingProfile) {
+            return back()->withErrors(['error' => 'Profile record not found for this user.']);
+        }
 
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
-            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $profileId, 
+            'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $existingProfile->id, 
             'date_of_birth'  => 'required|date|before:today',
             'contact_no'     => 'required|string|max:20',
             'email_address'  => 'required|email|max:255|unique:users,email,' . $dentist->id, 
@@ -166,7 +166,7 @@ class DentistController extends Controller
         ]);
 
         if ($request->hasFile('profile_image')) {
-            if ($existingProfile && $existingProfile->profile_image && Storage::disk('public')->exists($existingProfile->profile_image)) {
+            if ($existingProfile->profile_image && Storage::disk('public')->exists($existingProfile->profile_image)) {
                 Storage::disk('public')->delete($existingProfile->profile_image);
             }
             $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
@@ -174,10 +174,10 @@ class DentistController extends Controller
 
         $dentist->update(['name' => $validated['full_name'], 'email' => $validated['email_address']]);
 
-        DB::table('dentist_profiles')->where('id', $profileId)->update([
+        DB::table('dentist_profiles')->where('id', $existingProfile->id)->update([
             'full_name'      => $validated['full_name'],
             'email_address'  => $validated['email_address'], 
-            'profile_image'  => $validated['profile_image'] ?? ($existingProfile->profile_image ?? null),
+            'profile_image'  => $validated['profile_image'] ?? $existingProfile->profile_image,
             'prc_no'         => $validated['prc_no'],
             'date_of_birth'  => $validated['date_of_birth'],
             'contact_no'     => $validated['contact_no'],
@@ -186,13 +186,15 @@ class DentistController extends Controller
             'updated_at'     => now(),
         ]);
 
-        DB::table('pda_memberships')
-            ->where('dentist_profile_id', $profileId)
-            ->update([
-                'membership_year' => $validated['membership_year'],
-                'status'          => $validated['payment_status'],
-                'updated_at'      => now(),
-            ]);
+        if ($request->has('membership_year') && $request->has('payment_status')) {
+            DB::table('pda_memberships')
+                ->where('dentist_profile_id', $existingProfile->id)
+                ->update([
+                    'membership_year' => $validated['membership_year'],
+                    'status'          => $validated['payment_status'],
+                    'updated_at'      => now(),
+                ]);
+        }
 
         return redirect()->route('dentists.index')->with('success', 'Dentist profile updated successfully!');
     }
@@ -260,7 +262,6 @@ class DentistController extends Controller
 
         $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
 
-        // Syntax fixed: Removed the orphaned ->update block
         DB::table('pda_memberships')->insert([
             'dentist_profile_id' => $profile->id,
             'membership_year'    => $validated['membership_year'],
