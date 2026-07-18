@@ -129,15 +129,15 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // Trigger n8n webhook notification
+            // TRIGGER N8N WEBHOOK
             try {
                 Log::info('Attempting to trigger n8n webhook for: ' . $validated['email_address']);
                 
                 Http::post(env('N8N_WELCOME_WEBHOOK_URL'), [
-                    'email'    => $validated['email_address'],
-                    'name'     => $validated['full_name'],
-                    'password' => $temporaryPassword,
-                    'prc_no'   => $validated['prc_no']
+                    'email'              => $validated['email_address'],
+                    'name'               => $validated['full_name'],
+                    'temporary_password' => $temporaryPassword,
+                    'prc_no'             => $validated['prc_no']
                 ]);
             } catch (Exception $webhookError) {
                 Log::error('Webhook failed: ' . $webhookError->getMessage());
