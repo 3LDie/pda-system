@@ -7,7 +7,6 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\PasswordChangeController;
 use Illuminate\Support\Facades\Route;
 
-// ✅ Smart landing entry pathing
 Route::get('/', function () {
     if (auth()->check()) {
         return auth()->user()->role === 'admin' 
@@ -17,24 +16,19 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// 🔒 Password Change Routes
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');
     Route::patch('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
 });
 
-// ✅ Authenticated routes protected by both auth and the new password security check
 Route::middleware(['auth', 'password.check'])->group(function () {
-    
-    // User Profile Routes
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // 🔓 Accessible by both Admin and Member (Moved out of admin middleware)
+    // 🔓 Accessible by both Admin and Member
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
 
     // 🔒 STRICT ADMIN LOCKDOWN GROUP
