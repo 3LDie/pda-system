@@ -137,7 +137,8 @@ class DentistController extends Controller
                     'email'              => $validated['email_address'],
                     'name'               => $validated['full_name'],
                     'temporary_password' => $temporaryPassword,
-                    'prc_no'             => $validated['prc_no']
+                    'prc_no'             => $validated['prc_no'],
+                    'app_login_url'                => env('https://pda-system.up.railway.app/')
                 ]);
             } catch (Exception $webhookError) {
                 Log::error('Webhook failed: ' . $webhookError->getMessage());
