@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\Http; 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str; 
 use App\Traits\LogsActivity;
 use Exception;
@@ -127,6 +128,21 @@ class DentistController extends Controller
             ]);
 
             DB::commit();
+
+            // Trigger n8n webhook notification
+            try {
+                Log::info('Attempting to trigger n8n webhook for: ' . $validated['email_address']);
+                
+                Http::post(env('N8N_WELCOME_WEBHOOK_URL'), [
+                    'email'    => $validated['email_address'],
+                    'name'     => $validated['full_name'],
+                    'password' => $temporaryPassword,
+                    'prc_no'   => $validated['prc_no']
+                ]);
+            } catch (Exception $webhookError) {
+                Log::error('Webhook failed: ' . $webhookError->getMessage());
+            }
+
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
         } catch (Exception $e) {
             DB::rollBack();
