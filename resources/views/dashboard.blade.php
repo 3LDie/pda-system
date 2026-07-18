@@ -22,7 +22,7 @@
                         {{-- Member Photo Container Slot --}}
                         <div class="shrink-0">
                             <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-indigo-50 shadow-md flex items-center justify-center">
-                                @if($profile && $profile->profile_image)
+                                @if(isset($profile) && $profile->profile_image)
                                     <img src="{{ asset('storage/' . $profile->profile_image) }}" 
                                          alt="Profile Photo" 
                                          class="w-full h-full object-cover">
@@ -42,7 +42,7 @@
                                 
                                 {{-- Real-Time Current Membership Status Badge --}}
                                 <div>
-                                    @if($membership)
+                                    @if(isset($membership))
                                         <span class="inline-flex flex-col items-center md:items-end">
                                             <span class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Fiscal Status ({{ $membership->membership_year }})</span>
                                             <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold tracking-wide shadow-sm
