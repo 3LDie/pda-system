@@ -22,8 +22,8 @@
                         {{-- Member Photo Container Slot --}}
                         <div class="shrink-0">
                             <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-100 border-4 border-indigo-50 shadow-md flex items-center justify-center">
-                                @if($user->profile_image)
-                                    <img src="{{ asset('storage/' . $user->profile_image) }}" 
+                                @if($profile && $profile->profile_image)
+                                    <img src="{{ asset('storage/' . $profile->profile_image) }}" 
                                          alt="Profile Photo" 
                                          class="w-full h-full object-cover">
                                 @else
@@ -36,7 +36,7 @@
                         <div class="flex-1 w-full text-center md:text-left">
                             <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
-                                    <h3 class="text-2xl font-bold text-gray-900">{{ $user->full_name ?? $user->name }}</h3>
+                                    <h3 class="text-2xl font-bold text-gray-900">{{ $profile->full_name ?? $user->name }}</h3>
                                     <p class="text-sm font-medium text-indigo-600 mt-0.5">Registered Chapter Member</p>
                                 </div>
                                 
@@ -65,11 +65,11 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-y-4 gap-x-6 text-sm text-left">
                                 <div>
                                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">PRC License Number</span>
-                                    <span class="font-medium text-gray-800 mt-0.5 block">{{ $user->prc_no ?? 'N/A' }}</span>
+                                    <span class="font-medium text-gray-800 mt-0.5 block">{{ $profile->prc_no ?? 'N/A' }}</span>
                                 </div>
                                 <div>
                                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Contact Number</span>
-                                    <span class="font-medium text-gray-800 mt-0.5 block">{{ $user->contact_no ?? 'N/A' }}</span>
+                                    <span class="font-medium text-gray-800 mt-0.5 block">{{ $profile->contact_no ?? 'N/A' }}</span>
                                 </div>
                                 <div class="sm:col-span-2">
                                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Email Address</span>
@@ -78,7 +78,7 @@
                                 <div class="sm:col-span-2">
                                     <span class="block text-xs font-semibold text-gray-400 uppercase tracking-wider">Clinic Address</span>
                                     <span class="font-medium text-gray-700 mt-0.5 block bg-gray-50 p-3 rounded-md border border-gray-100 leading-relaxed">
-                                        {{ $user->clinic_address ?? 'No clinic address registered.' }}
+                                        {{ $profile->clinic_address ?? 'No clinic address registered.' }}
                                     </span>
                                 </div>
                             </div>
