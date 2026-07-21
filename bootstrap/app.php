@@ -12,7 +12,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // ✅ Registers the secure Super Admin middleware and the Password Check guard
+        // Registers the secure Super Admin middleware and the Password Check guard
         $middleware->alias([
             'admin' => \App\Http\Middleware\IsAdmin::class,
             'password.check' => \App\Http\Middleware\CheckPasswordChanged::class,

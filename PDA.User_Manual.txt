@@ -1,0 +1,27 @@
+PDA Information Management System — User Manual
+
+1. Introduction
+The PDA Information Management System is a centralized web application designed for the Philippine Dental Association Baguio City Chapter to digitize member records, streamline transaction monitoring, and efficiently manage active professional statuses.
+
+2. User Roles & Access Guides
+A. Member Dentists
+Access Level: Personal profile and membership renewal tracking.
+
+How to Use:
+Log into your member account using your registered email and credentials.
+Navigate to your Profile Dashboard to view your personal details, PRC number, contact information, and membership status.
+Check your active membership year and validity dates.
+Submit requests or view updates regarding annual renewals.
+
+B. System Administrators / Chapter Officers
+Access Level: Full system management, member records, and transaction oversight.
+
+How to Use:
+Log in using secure administrative credentials.
+Member Directory Management: Use the search bar and sort dropdown (by name, license/PRC number, membership year, or birthday) to quickly locate and filter dentist profiles.
+Record Updates: Add new members, edit existing profiles, or process membership renewals.
+Status Monitoring: Monitor active and inactive member statistics through the dashboard summary cards and transaction logs.
+
+3. System Navigation & Troubleshooting
+Searching and Sorting: Utilize the live search input to instantly filter members by name or PRC license number, and use the sorting selector to organize the directory alphabetically or chronologically.
+Network / Deployment Status: Ensure a stable connection to the live server. If updates fail to sync or changes don't reflect immediately, perform a hard refresh or check repository branch synchronization.

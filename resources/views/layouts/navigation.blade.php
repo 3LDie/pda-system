@@ -3,8 +3,9 @@
         <div class="flex justify-between h-16">
             <div class="flex">
                 <div class="shrink-0 flex items-center">
-                    <a href="{{ route('dashboard') }}">
-                        <img src="{{ asset('images/pda-logo.jpg') }}" alt="PDA Logo" class="block h-11 w-auto rounded shadow-sm">
+                    <a href="{{ route('dashboard') }}" class="flex items-center gap-2">
+                        <img src="{{ asset('images/pda_logo.jpg') }}" alt="PDA Logo" class="block h-10 w-10 rounded-full object-cover shadow-sm border border-gray-200 dark:border-gray-600">
+                        <span class="font-bold text-gray-800 dark:text-gray-200 tracking-wide text-sm hidden sm:inline-block">PDA Portal</span>
                     </a>
                 </div>
 
@@ -105,7 +106,6 @@
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
 
-            {{-- 🔒 Mobile Guard: Hide structural registry pathways from standard members --}}
             @if(auth()->user()->role === 'admin')
                 <x-responsive-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
                     {{ __('Dentist Directory') }}
