@@ -13,12 +13,16 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased">
-        <div class="min-h-screen bg-gray-100">
+    @php
+        $isDentistPage = request()->routeIs('dentists.*');
+        $isDashboard = request()->routeIs('dashboard');
+    @endphp
+    <body class="font-sans antialiased" data-dentist-mode="{{ $isDentistPage ? '1' : '0' }}">
+        <div class="min-h-screen bg-gray-100 text-slate-900 transition-colors duration-200 {{ ($isDentistPage || $isDashboard) ? 'dark:bg-[#030616] dark:text-slate-100' : '' }}">
             @include('layouts.navigation')
 
             @isset($header)
-                <header class="bg-white shadow">
+                <header class="bg-white shadow {{ ($isDentistPage || $isDashboard) ? 'dark:bg-[#3E3F47] dark:border-b dark:border-[#3E3F47] dark:text-slate-100' : '' }}">
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
@@ -26,7 +30,7 @@
             @endisset
 
             <main>
-                {{ $slot }}
+                {{ $slot }} 
             </main>
         </div>
 
@@ -40,24 +44,24 @@
              x-transition:leave="transition ease-in duration-200"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed top-5 right-5 z-50 max-w-md w-full bg-white border border-gray-100 rounded-xl shadow-xl pointer-events-auto overflow-hidden">
+             class="fixed top-5 right-5 z-50 max-w-md w-full bg-white dark:bg-slate-900 border border-gray-100 dark:border-slate-800 rounded-xl shadow-xl pointer-events-auto overflow-hidden">
             
             <div class="p-4 flex items-start gap-3">
                 @if(session('success'))
                     <div class="flex-shrink-0 text-emerald-500 text-xl">✅</div>
                     <div class="flex-1">
-                        <p class="text-sm font-semibold text-gray-900">Operation Successful</p>
-                        <p class="text-xs text-gray-500 mt-0.5">{{ session('success') }}</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-slate-100">Operation Successful</p>
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{{ session('success') }}</p>
                     </div>
                 @else
                     <div class="flex-shrink-0 text-rose-500 text-xl">⚠️</div>
                     <div class="flex-1">
-                        <p class="text-sm font-semibold text-gray-900">Validation/Database Alert</p>
-                        <p class="text-xs text-gray-500 mt-0.5">{{ $errors->first() }}</p>
+                        <p class="text-sm font-semibold text-gray-900 dark:text-slate-100">Validation/Database Alert</p>
+                        <p class="text-xs text-gray-500 dark:text-slate-400 mt-0.5">{{ $errors->first() }}</p>
                     </div>
                 @endif
 
-                <button @click="show = false" class="text-gray-400 hover:text-gray-600 transition focus:outline-none text-xs font-bold font-sans px-1 cursor-pointer">
+                <button @click="show = false" class="text-gray-400 hover:text-gray-600 dark:text-slate-300 dark:hover:text-white transition focus:outline-none text-xs font-bold font-sans px-1 cursor-pointer">
                     &times;
                 </button>
             </div>
