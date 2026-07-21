@@ -4,12 +4,14 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Mail\WelcomeMemberMail;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Http; // Added import
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -34,30 +36,29 @@ class RegisteredUserController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()], // Password made optional so admin-created accounts can auto-generate
         ]);
+
+        // Generate a temporary secure password if none is explicitly provided
+        $plainPassword = $request->password ?? Str::random(10);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'role' => 'admin', // Forces role to admin instead of default 'clerk'
+            'password' => Hash::make($plainPassword),
         ]);
 
-        // Trigger the n8n webhook
-        Http::post(config('services.n8n.welcome_url'), [
-            'full_name' => $user->name,
-            'email' => $user->email,
-            'prc_no' => 'N/A', // Send a placeholder for non-dentist users
-            'temporary_password' => 'N/A',
-            'app_login_url' => url('/login'),
-            'generated_at' => now()->toIso8601String(),
-        ]);
+        // Send the welcome email with the temporary password directly via Brevo SMTP
+        Mail::to($user->email)->send(new WelcomeMemberMail($user, $plainPassword));
 
         event(new Registered($user));
 
-        Auth::login($user);
+        // If registered from public view, log them in. If created by admin panel, handle redirection accordingly.
+        if (!Auth::check()) {
+            Auth::login($user);
+            return redirect(route('dashboard', absolute: false));
+        }
 
-        return redirect(route('dashboard', absolute: false));
+        return redirect()->back()->with('success', 'Member registered successfully and temporary credentials sent via email.');
     }
 }

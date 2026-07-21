@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\User; 
 use App\Models\PdaMembership;
+use App\Mail\WelcomeMemberMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash; 
 use Illuminate\Support\Facades\Http; 
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str; 
@@ -130,20 +132,8 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // TRIGGER N8N WEBHOOK
-            try {
-                Log::info('Attempting to trigger n8n webhook for: ' . $validated['email_address']);
-                
-                Http::post(env('N8N_WELCOME_WEBHOOK_URL'), [
-                    'email'              => $validated['email_address'],
-                    'name'               => $validated['full_name'],
-                    'temporary_password' => $temporaryPassword,
-                    'prc_no'             => $validated['prc_no'],
-                    'app_login_url' => 'https://pda-system.up.railway.app'
-                ]);
-            } catch (Exception $webhookError) {
-                Log::error('Webhook failed: ' . $webhookError->getMessage());
-            }
+            // Send the welcome email natively via Brevo SMTP
+            Mail::to($dentist->email)->send(new WelcomeMemberMail($dentist, $temporaryPassword));
 
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
         } catch (Exception $e) {

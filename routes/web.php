@@ -8,13 +8,13 @@ use App\Http\Controllers\PasswordChangeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
-    if (auth()->check()) {
-        return auth()->user()->role === 'admin' 
-            ? redirect()->route('dentists.index') 
-            : redirect()->route('dashboard');
-    }
-    return redirect()->route('login');
+    return view('welcome');
 });
+
+// Custom Named Auth URLs
+Route::get('/admin_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('admin.login');
+Route::get('/member_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('member.login');
+Route::get('/register_page', [RegisteredUserController::class, 'create'])->name('register.page');
 
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');
