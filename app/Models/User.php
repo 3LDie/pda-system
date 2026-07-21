@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -50,6 +52,34 @@ class User extends Authenticatable implements MustVerifyEmail
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    /**
+     * Send the email verification notification via Brevo HTTP API to bypass Railway SMTP port blocks.
+     */
+    public function sendEmailVerificationNotification()
+    {
+        $verificationUrl = URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            ['id' => $this->getKey(), 'hash' => sha1($this->getEmailForVerification())]
+        );
+
+        Http::withHeaders([
+            'api-key' => env('BREVO_API_KEY'),
+            'accept' => 'application/json',
+            'content-type' => 'application/json',
+        ])->post('https://api.brevo.com/v3/smtp/email', [
+            'sender' => [
+                'name' => env('MAIL_FROM_NAME', 'PDA Portal'),
+                'email' => env('MAIL_FROM_ADDRESS', 'pda.portal.2026@gmail.com')
+            ],
+            'to' => [
+                ['email' => $this->email]
+            ],
+            'subject' => 'Verify your email address',
+            'htmlContent' => '<p>Hello!</p><p>Please click the link below to verify your email address:</p><p><a href="' . $verificationUrl . '">Verify Email Address</a></p>'
+        ]);
     }
 
     /**
