@@ -16,7 +16,7 @@
                     {{-- 🔒 Desktop Guard: Render directory access exclusively for existing Admins --}}
                     @if(auth()->user()->role === 'admin')
                         <x-nav-link :href="route('dentists.index')" :active="request()->routeIs('dentists.*')">
-                            {{ __('Dentist Directory') }}
+                            {{ __('Dentist Membership') }}
                         </x-nav-link>
                     @endif
                 </div>

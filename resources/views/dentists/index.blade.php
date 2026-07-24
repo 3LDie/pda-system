@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <h2 class="font-semibold text-xl text-gray-800 dark:text-white leading-tight">
-            {{ __('PDA Dentist Directory') }}
+            {{ __('PDA Dentist Members') }}
         </h2>
     </x-slot>
 
@@ -49,7 +49,7 @@
                 
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-100 dark:border-gray-700 pb-4 mb-6 gap-4">
                     <div>
-                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Registry Records</h3>
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Membership Records</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
@@ -77,25 +77,25 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div class="bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-700/50 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Directory</p>
+                            <p class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Total Members</p>
                             <h4 class="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">{{ $stats['total_dentists'] }}</h4>
                         </div>
                     </div>
                     <div class="bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/30 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Active This Year</p>
+                            <p class="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Active</p>
                             <h4 class="text-2xl font-bold text-emerald-900 dark:text-emerald-300 mt-1">{{ $stats['active_members'] }}</h4>
                         </div>
                     </div>
                     <div class="bg-amber-50/50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-900/30 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Pending Logs</p>
+                            <p class="text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase tracking-wider">Status Logs</p>
                             <h4 class="text-2xl font-bold text-amber-900 dark:text-amber-300 mt-1">{{ $stats['pending_members'] }}</h4>
                         </div>
                     </div>
                     <div class="bg-rose-50/50 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/30 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
-                            <p class="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Inactive/Delinquent</p>
+                            <p class="text-xs font-semibold text-rose-600 dark:text-rose-400 uppercase tracking-wider">Inactive Members</p>
                             <h4 class="text-2xl font-bold text-rose-900 dark:text-rose-300 mt-1">{{ $stats['inactive_members'] }}</h4>
                         </div>
                     </div>
