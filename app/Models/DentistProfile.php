@@ -9,7 +9,14 @@ class DentistProfile extends Model
 {
     // Allows us to mass-assign data into these columns safely
     protected $fillable = [
-        'full_name', 'prc_no', 'date_of_birth', 'home_address', 'clinic_address', 'email_address', 'contact_no'
+        'full_name', 
+        'profile_image', // 👈 Added for file path mass-assignment
+        'prc_no', 
+        'date_of_birth', 
+        'home_address', 
+        'clinic_address', 
+        'email_address', 
+        'contact_no'
     ];
 
     // Defines the relationship: A dentist has many membership year records

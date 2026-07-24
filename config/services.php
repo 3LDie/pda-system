@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    // Add this block for your n8n workflow
+    'n8n' => [
+        'welcome_url' => env('N8N_WELCOME_WEBHOOK_URL'),
+    ],
+
 ];
