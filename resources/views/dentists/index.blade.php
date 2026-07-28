@@ -147,7 +147,7 @@
                 <div class="mb-6 flex flex-col md:flex-row gap-4">
                     <select
                         x-model="sortBy"
-                        class="w-40 rounded-md border-gray-300">
+                        class="w-40 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#5045EB]/40 focus:border-[#5045EB]">
                             <option value="name_asc">Name (A–Z)</option>
                             <option value="name_desc">Name (Z–A)</option>
                             <option value="license_asc">License Number (Ascending)</option>
