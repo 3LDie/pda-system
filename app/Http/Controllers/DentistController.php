@@ -104,7 +104,7 @@ class DentistController extends Controller
             $dentist = User::create([
                 'name'     => $validated['full_name'], 
                 'email'    => $validated['email_address'],
-                'password' => Hash::make('password123'),
+                'password' => Hash::make($temporaryPassword),
                 'role'     => 'member', 
             ]);
 
@@ -132,7 +132,6 @@ class DentistController extends Controller
 
             DB::commit();
 
-            // Send the welcome email natively via Brevo SMTP
             Mail::to($dentist->email)->send(new WelcomeMemberMail($dentist, $temporaryPassword));
 
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
@@ -205,6 +204,34 @@ class DentistController extends Controller
         }
 
         return redirect()->route('dentists.index')->with('success', 'Dentist profile updated successfully!');
+    }
+
+    public function updatePhoto(Request $request)
+    {
+        $user = auth()->user();
+        $existingProfile = DB::table('dentist_profiles')->where('user_id', $user->id)->first();
+
+        if (!$existingProfile) {
+            return back()->withErrors(['error' => 'Profile record not found.']);
+        }
+
+        $request->validate([
+            'profile_image' => 'required|image|mimes:jpeg,png,jpg|max:10240',
+        ]);
+
+        if ($request->hasFile('profile_image')) {
+            if ($existingProfile->profile_image && Storage::disk('public')->exists($existingProfile->profile_image)) {
+                Storage::disk('public')->delete($existingProfile->profile_image);
+            }
+            $imagePath = $request->file('profile_image')->store('profile_images', 'public');
+
+            DB::table('dentist_profiles')->where('id', $existingProfile->id)->update([
+                'profile_image' => $imagePath,
+                'updated_at'    => now(),
+            ]);
+        }
+
+        return back()->with('success', 'Profile photo updated successfully!');
     }
 
     public function export(Request $request)
