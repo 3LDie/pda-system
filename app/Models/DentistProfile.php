@@ -3,14 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DentistProfile extends Model
 {
-    // Allows us to mass-assign data into these columns safely
     protected $fillable = [
+        'user_id',
         'full_name', 
-        'profile_image', // 👈 Added for file path mass-assignment
+        'profile_image', 
         'prc_no', 
         'date_of_birth', 
         'home_address', 
@@ -19,9 +20,13 @@ class DentistProfile extends Model
         'contact_no'
     ];
 
-    // Defines the relationship: A dentist has many membership year records
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
     public function memberships(): HasMany
     {
-        return $this->hasMany(PdaMembership::class);
+        return $this->hasMany(PdaMembership::class, 'dentist_profile_id');
     }
 }

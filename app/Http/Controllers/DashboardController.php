@@ -12,30 +12,29 @@ class DashboardController extends Controller
      */
     public function index()
     {
-        // 1. Get the authenticated user and load the 'profile' relationship
+        // 1. Get the authenticated user
         $user = Auth::user();
 
         if (!$user) {
             return redirect()->route('login');
         }
 
-        $user->load('profile'); 
-
-        // 2. Admin-specific dashboard
+        // 2. Admin-specific dashboard check
         if ($user->role === 'admin') {
             return view('admin.dashboard', [
                 'role' => 'admin'
             ]);
         }
 
-        // 3. Fetch current membership record
+        // 3. Load the 'profile' relationship safely for members
+        $user->load('profile'); 
+
+        // 4. Fetch current membership record
         $currentMembership = $user->memberships()
             ->orderBy('membership_year', 'desc')
             ->first();
 
-        // 4. Return view with 'profile' passed explicitly
-        // Using the null-coalescing operator (?? null) ensures the variable 
-        // is always defined, preventing the "Undefined variable" error.
+        // 5. Return view with profile passed explicitly to prevent errors
         return view('dashboard', [
             'role' => 'member',
             'user' => $user,
