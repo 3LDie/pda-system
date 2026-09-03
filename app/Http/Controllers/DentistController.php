@@ -132,29 +132,8 @@ class DentistController extends Controller
 
             DB::commit();
 
-<<<<<<< HEAD
             // Send the welcome email natively via Brevo SMTP
             Mail::to($dentist->email)->send(new WelcomeMemberMail($dentist, $temporaryPassword));
-=======
-            // TRIGGER N8N WEBHOOK SAFELY
-            try {
-                $webhookUrl = env('N8N_WELCOME_WEBHOOK_URL');
-                
-                if ($webhookUrl) {
-                    Log::info('Attempting to trigger n8n webhook for: ' . $validated['email_address']);
-                    
-                    Http::post($webhookUrl, [
-                        'email'              => $validated['email_address'],
-                        'name'               => $validated['full_name'],
-                        'temporary_password' => $temporaryPassword,
-                        'prc_no'             => $validated['prc_no'],
-                        'app_login_url'      => 'https://pda-system.up.railway.app'
-                    ]);
-                }
-            } catch (Exception $webhookError) {
-                Log::error('Webhook failed: ' . $webhookError->getMessage());
-            }
->>>>>>> b031a66 (Save local changes)
 
             return redirect()->route('dentists.index')->with('success', 'Member record successfully saved!');
         } catch (Exception $e) {
