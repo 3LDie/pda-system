@@ -85,6 +85,7 @@ class DentistController extends Controller
     {
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
+            'extension'      => 'nullable|string|max:50',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
             'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no', 
             'date_of_birth'  => 'required|date|before:today',
@@ -96,13 +97,35 @@ class DentistController extends Controller
             'payment_status' => 'required|string',
         ]);
 
+        // Automatically convert middle name to middle initial and format name
+        $rawName = trim($validated['full_name']);
+        $parts = array_map('trim', explode(',', $rawName));
+        
+        $formattedName = $rawName; 
+        if (count($parts) >= 2) {
+            $surname = $parts[0];
+            $rest = array_values(array_filter(explode(' ', $parts[1])));
+            $firstName = $rest[0] ?? '';
+            $middleName = $rest[1] ?? '';
+
+            $formattedName = $surname . ', ' . $firstName;
+            if (!empty($middleName)) {
+                $initial = strtoupper(substr($middleName, 0, 1)) . '.';
+                $formattedName .= ' ' . $initial;
+            }
+        }
+
+        if (!empty($validated['extension'])) {
+            $formattedName .= ' ' . trim($validated['extension']);
+        }
+
         DB::beginTransaction();
         try {
             $imagePath = $request->hasFile('profile_image') ? $request->file('profile_image')->store('profile_images', 'public') : null;
             $temporaryPassword = Str::random(10);
             
             $dentist = User::create([
-                'name'     => $validated['full_name'], 
+                'name'     => $formattedName, 
                 'email'    => $validated['email_address'],
                 'password' => Hash::make($temporaryPassword),
                 'role'     => 'member', 
@@ -110,7 +133,7 @@ class DentistController extends Controller
 
             $profileId = DB::table('dentist_profiles')->insertGetId([
                 'user_id'        => $dentist->id,
-                'full_name'      => $validated['full_name'],
+                'full_name'      => $formattedName,
                 'email_address'  => $validated['email_address'],
                 'profile_image'  => $imagePath,
                 'prc_no'         => $validated['prc_no'],
@@ -161,6 +184,7 @@ class DentistController extends Controller
 
         $validated = $request->validate([
             'full_name'      => 'required|string|max:255',
+            'extension'      => 'nullable|string|max:50',
             'profile_image'  => 'nullable|image|mimes:jpeg,png,jpg|max:10240', 
             'prc_no'         => 'required|string|max:15|unique:dentist_profiles,prc_no,' . $existingProfile->id, 
             'date_of_birth'  => 'required|date|before:today',
@@ -172,6 +196,28 @@ class DentistController extends Controller
             'payment_status' => 'sometimes|required|string',
         ]);
 
+        // Automatically convert middle name to middle initial and format name
+        $rawName = trim($validated['full_name']);
+        $parts = array_map('trim', explode(',', $rawName));
+        
+        $formattedName = $rawName; 
+        if (count($parts) >= 2) {
+            $surname = $parts[0];
+            $rest = array_values(array_filter(explode(' ', $parts[1])));
+            $firstName = $rest[0] ?? '';
+            $middleName = $rest[1] ?? '';
+
+            $formattedName = $surname . ', ' . $firstName;
+            if (!empty($middleName)) {
+                $initial = strtoupper(substr($middleName, 0, 1)) . '.';
+                $formattedName .= ' ' . $initial;
+            }
+        }
+
+        if (!empty($validated['extension'])) {
+            $formattedName .= ' ' . trim($validated['extension']);
+        }
+
         if ($request->hasFile('profile_image')) {
             if ($existingProfile->profile_image && Storage::disk('public')->exists($existingProfile->profile_image)) {
                 Storage::disk('public')->delete($existingProfile->profile_image);
@@ -179,10 +225,10 @@ class DentistController extends Controller
             $validated['profile_image'] = $request->file('profile_image')->store('profile_images', 'public');
         }
 
-        $dentist->update(['name' => $validated['full_name'], 'email' => $validated['email_address']]);
+        $dentist->update(['name' => $formattedName, 'email' => $validated['email_address']]);
 
         DB::table('dentist_profiles')->where('id', $existingProfile->id)->update([
-            'full_name'      => $validated['full_name'],
+            'full_name'      => $formattedName,
             'email_address'  => $validated['email_address'], 
             'profile_image'  => $validated['profile_image'] ?? $existingProfile->profile_image,
             'prc_no'         => $validated['prc_no'],

@@ -7,14 +7,19 @@
 
     <div class="py-12" x-data='{ 
         search: "",
+        sortBy: "last_name",
         dentists: [
             @foreach($dentists as $dentist)
             {
                 "id": "{{ $dentist->id }}",
                 "name": {!! json_encode($dentist->full_name ?? "") !!},
+                "lastName": {!! json_encode($dentist->last_name ?? $dentist->full_name ?? "") !!},
+                "firstName": {!! json_encode($dentist->first_name ?? "") !!},
                 "prc": "{{ $dentist->prc_no ?? "" }}",
                 "contact": "{{ $dentist->contact_no ?? "" }}",
                 "clinic": {!! json_encode($dentist->clinic_address ?? "") !!},
+                "birthday": "{{ $dentist->birthdate ?? "" }}",
+                "createdAt": "{{ $dentist->created_at ?? "" }}",
                 "memberships": [
                     @if($dentist->profile_id)
                         @foreach(DB::table("pda_memberships")->where("dentist_profile_id", $dentist->profile_id)->orderBy("membership_year", "desc")->take(2)->get() as $membership)
@@ -38,8 +43,28 @@
             
             return nameMatch || prcMatch;
         },
+        get filteredDentists() {
+            let filtered = this.dentists.filter(d => this.matches(d));
+
+            return filtered.sort((a, b) => {
+                if (this.sortBy === "last_name") {
+                    return (a.lastName || "").localeCompare(b.lastName || "");
+                } else if (this.sortBy === "first_name") {
+                    return (a.firstName || "").localeCompare(b.firstName || "");
+                } else if (this.sortBy === "latest") {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                } else if (this.sortBy === "oldest") {
+                    return new Date(a.createdAt) - new Date(b.createdAt);
+                } else if (this.sortBy === "prc") {
+                    return (a.prc || "").localeCompare(b.prc || "", undefined, {numeric: true});
+                } else if (this.sortBy === "birthday") {
+                    return new Date(a.birthday || "9999-12-31") - new Date(b.birthday || "9999-12-31");
+                }
+                return 0;
+            });
+        },
         get filteredCount() {
-            return this.dentists.filter(d => this.matches(d)).length;
+            return this.filteredDentists.length;
         }
     }'>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -123,6 +148,7 @@
                     </div>
                 </div>
 
+<<<<<<< HEAD
                 <div class="mb-6">
 
                     <input type="text"
@@ -139,6 +165,27 @@
                            x-model.debounce.300ms="search" 
                            placeholder="Search by name or PRC number..." 
                            class="w-full md:w-1/3 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500">
+=======
+                {{-- Search and Sort Controls Bar --}}
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div class="w-full sm:w-1/3">
+                        <input type="text" 
+                               x-model.debounce.300ms="search" 
+                               placeholder="Search by name or PRC number..." 
+                               class="w-full rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="sortBy" 
+                                class="w-full sm:w-auto rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-2">
+                            <option value="last_name">Sort by: Last Name</option>
+                            <option value="first_name">Sort by: First Name</option>
+                            <option value="latest">Sort by: Latest Member</option>
+                            <option value="oldest">Sort by: Oldest Member</option>
+                            <option value="prc">Sort by: PRC Number</option>
+                            <option value="birthday">Sort by: Birthday</option>
+                        </select>
+                    </div>
+>>>>>>> 811fac3 (Refactor dentist name structuring with auto-parsed middle initials, separate extension fields, and updated form validation requirements)
                 </div>
 
                 <div class="overflow-x-auto">
@@ -162,7 +209,7 @@
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm flex items-center justify-center">
 
                         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                            <template x-for="dentist in dentists">
+                            <template x-for="dentist in filteredDentists" :key="dentist.id">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
 
                                     <td class="px-6 py-4 whitespace-nowrap">
