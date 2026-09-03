@@ -5,7 +5,6 @@
         </h2>
     </x-slot>
 
-    <!-- ✅ Fixed: Bypasses Eloquent relationship calls by querying pda_memberships directly via profile_id -->
     <div class="py-12" x-data='{ 
         search: "",
         dentists: [
@@ -13,7 +12,6 @@
             {
                 "id": "{{ $dentist->id }}",
                 "name": {!! json_encode($dentist->full_name ?? "") !!},
-                "image": "{{ $dentist->profile_image ? asset("storage/" . $dentist->profile_image) : "" }}",
                 "prc": "{{ $dentist->prc_no ?? "" }}",
                 "contact": "{{ $dentist->contact_no ?? "" }}",
                 "clinic": {!! json_encode($dentist->clinic_address ?? "") !!},
@@ -126,7 +124,7 @@
                 </div>
 
                 <div class="mb-6">
-<<<<<<< HEAD
+
                     <input type="text"
                            x-model.debounce.300ms="search"
                            placeholder="Search by name or PRC number..."
@@ -136,7 +134,7 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
                         <thead class="bg-gray-50 dark:bg-gray-800">
-=======
+
                     <input type="text" 
                            x-model.debounce.300ms="search" 
                            placeholder="Search by name or PRC number..." 
@@ -146,9 +144,8 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                         <thead class="bg-gray-50 dark:bg-gray-800/50">
->>>>>>> 1d14bdd (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
+ (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Photo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Full Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PRC Number</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact No.</th>
@@ -157,19 +154,20 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-<<<<<<< HEAD
+
                         <tbody class="bg-white dark:bg-gray-700 divide-y divide-gray-200 dark:divide-gray-600">
                             <template x-for="dentist in dentists">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-600 shadow-sm flex items-center justify-center">
-=======
+
                         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
                             <template x-for="dentist in dentists">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
+
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-center">
->>>>>>> 1d14bdd (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
+ (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
                                             <template x-if="dentist.image">
                                                 <img :src="dentist.image" 
                                                      alt="Profile" 
@@ -181,6 +179,8 @@
                                             </template>
                                         </div>
                                     </td>
+
+ (Refactor dentist CRUD views for dynamic light/dark mode, fix email binding in edit view, and remove photo column from directory index)
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100" x-text="dentist.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.prc"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.contact"></td>
@@ -212,11 +212,14 @@
 
                             <template x-if="filteredCount === 0">
                                 <tr>
-<<<<<<< HEAD
+
                                     <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/50">
-=======
+
                                     <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/20">
->>>>>>> 1d14bdd (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
+ (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
+
+                                    <td colspan="6" class="px-6 py-10 text-center text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/20">
+(Refactor dentist CRUD views for dynamic light/dark mode, fix email binding in edit view, and remove photo column from directory index)
                                         No registered dentists match your current search constraints.
                                     </td>
                                 </tr>
