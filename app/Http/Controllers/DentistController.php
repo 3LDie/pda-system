@@ -25,7 +25,7 @@ class DentistController extends Controller
         Log::info('Current User ID: ' . auth()->id());
         $query = User::where('users.role', 'member')
             ->join('dentist_profiles', 'users.id', '=', 'dentist_profiles.user_id')
-            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address', 'dentist_profiles.profile_image');
+            ->select('users.*', 'dentist_profiles.id as profile_id', 'dentist_profiles.full_name', 'dentist_profiles.prc_no', 'dentist_profiles.contact_no', 'dentist_profiles.clinic_address');
 
         if (auth()->user()->role === 'member') {
             $query->where('users.id', auth()->id());
