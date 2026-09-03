@@ -12,6 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\URL;
+use App\Models\DentistProfile;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
