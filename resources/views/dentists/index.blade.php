@@ -8,6 +8,8 @@
     <div class="py-12" x-data='{ 
         search: "",
         sortBy: "last_name",
+        currentPage: 1,
+        itemsPerPage: 10,
         dentists: [
             @foreach($dentists as $dentist)
             {
@@ -77,6 +79,34 @@
         },
         get filteredCount() {
             return this.filteredDentists.length;
+        },
+        get paginatedDentists() {
+            const start = (this.currentPage - 1) * this.itemsPerPage;
+            return this.filteredDentists.slice(start, start + this.itemsPerPage);
+        },
+        get totalPages() {
+            return Math.ceil(this.filteredCount / this.itemsPerPage) || 1;
+        },
+        get pageNumbers() {
+            let pages = [];
+            let start = Math.max(1, this.currentPage - 2);
+            let end = Math.min(this.totalPages, this.currentPage + 2);
+            
+            if (this.currentPage - 1 <= 2) {
+                end = Math.min(this.totalPages, 5);
+            }
+            if (this.totalPages - this.currentPage <= 2) {
+                start = Math.max(1, this.totalPages - 4);
+            }
+
+            for (let i = start; i <= end; i++) {
+                pages.push(i);
+            }
+            return pages;
+        },
+        init() {
+            this.$watch("search", () => this.currentPage = 1);
+            this.$watch("sortBy", () => this.currentPage = 1);
         }
     }'>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
@@ -186,7 +216,7 @@
                         </thead>
 
                         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                            <template x-for="dentist in filteredDentists" :key="dentist.id">
+                            <template x-for="dentist in paginatedDentists" :key="dentist.id">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100" x-text="dentist.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.prc"></td>
@@ -226,6 +256,39 @@
                             </template>
                         </tbody>
                     </table>
+                </div>
+
+                {{-- Pagination Controls --}}
+                <div class="flex flex-col items-center justify-center px-6 py-4 border-t border-gray-200 dark:border-gray-800 space-y-3">
+                    <div class="flex space-x-1 sm:space-x-2 justify-center">
+                        <button @click="if (currentPage > 1) currentPage--" 
+                                :disabled="currentPage === 1"
+                                class="px-2 sm:px-3 py-1.5 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            &laquo; Prev
+                        </button>
+                        
+                        <div class="hidden sm:flex space-x-1">
+                            <template x-for="page in pageNumbers" :key="page">
+                                <button @click="currentPage = page" 
+                                        :class="currentPage === page ? 'bg-indigo-50 border-indigo-500 text-indigo-600 dark:bg-indigo-900/30 dark:border-indigo-500/50 dark:text-indigo-400 z-10' : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'"
+                                        class="px-3.5 py-1.5 border shadow-sm text-sm font-medium rounded-md focus:outline-none transition"
+                                        x-text="page">
+                                </button>
+                            </template>
+                        </div>
+
+                        <button @click="if (currentPage < totalPages) currentPage++" 
+                                :disabled="currentPage >= totalPages"
+                                class="px-2 sm:px-3 py-1.5 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition disabled:opacity-50 disabled:cursor-not-allowed">
+                            Next &raquo;
+                        </button>
+                    </div>
+
+                    <div class="text-sm text-gray-500 dark:text-gray-400 text-center">
+                        Showing <span class="font-medium text-gray-900 dark:text-gray-100 ml-1 mr-1" x-text="filteredCount ? (currentPage - 1) * itemsPerPage + 1 : 0"></span> to 
+                        <span class="font-medium text-gray-900 dark:text-gray-100 ml-1 mr-1" x-text="Math.min(currentPage * itemsPerPage, filteredCount)"></span> of 
+                        <span class="font-medium text-gray-900 dark:text-gray-100 ml-1 mr-1" x-text="filteredCount"></span> results
+                    </div>
                 </div>
 
             </div>
