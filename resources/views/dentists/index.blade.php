@@ -74,12 +74,12 @@
                     const by = b.memberships.length ? parseInt(b.memberships[0].year) : 9999;
                     return ay - by;
                 } else if (this.sortBy === "active_first") {
-                    const aActive = a.memberships.length && (a.memberships[0].status.includes("Active") || a.memberships[0].status.includes("Paid")) ? 1 : 0;
-                    const bActive = b.memberships.length && (b.memberships[0].status.includes("Active") || b.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    const aActive = a.memberships.some(m => m.year === "{{ date('Y') . '-' . substr(date('Y') + 1, -2) }}" && (m.status.includes("Active") || m.status.includes("Paid"))) ? 1 : 0;
+                    const bActive = b.memberships.some(m => m.year === "{{ date('Y') . '-' . substr(date('Y') + 1, -2) }}" && (m.status.includes("Active") || m.status.includes("Paid"))) ? 1 : 0;
                     return bActive - aActive || (a.lastName || "").localeCompare(b.lastName || "");
                 } else if (this.sortBy === "inactive_first") {
-                    const aActive = a.memberships.length && (a.memberships[0].status.includes("Active") || a.memberships[0].status.includes("Paid")) ? 1 : 0;
-                    const bActive = b.memberships.length && (b.memberships[0].status.includes("Active") || b.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    const aActive = a.memberships.some(m => m.year === "{{ date('Y') . '-' . substr(date('Y') + 1, -2) }}" && (m.status.includes("Active") || m.status.includes("Paid"))) ? 1 : 0;
+                    const bActive = b.memberships.some(m => m.year === "{{ date('Y') . '-' . substr(date('Y') + 1, -2) }}" && (m.status.includes("Active") || m.status.includes("Paid"))) ? 1 : 0;
                     return aActive - bActive || (a.lastName || "").localeCompare(b.lastName || "");
                 }
                 return 0;
