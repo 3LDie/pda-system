@@ -18,7 +18,7 @@
     <body class="font-sans text-slate-900 dark:text-slate-100 antialiased bg-slate-100 dark:bg-slate-950 transition-colors duration-200">
         
         <!-- Absolute Dark Mode Toggle Button on Auth Pages -->
-        <div class="absolute top-6 right-6">
+        <div class="absolute top-6 right-6 z-20">
             <button @click="darkMode = !darkMode" class="p-2.5 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-xl transition border border-slate-200 dark:border-slate-800 shadow-sm" aria-label="Toggle Dark Mode">
                 <!-- Moon Icon -->
                 <svg x-show="!darkMode" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
