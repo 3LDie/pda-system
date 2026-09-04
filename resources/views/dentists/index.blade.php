@@ -73,6 +73,14 @@
                     const ay = a.memberships.length ? parseInt(a.memberships[0].year) : 9999;
                     const by = b.memberships.length ? parseInt(b.memberships[0].year) : 9999;
                     return ay - by;
+                } else if (this.sortBy === "active_first") {
+                    const aActive = a.memberships.length && (a.memberships[0].status.includes("Active") || a.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    const bActive = b.memberships.length && (b.memberships[0].status.includes("Active") || b.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    return bActive - aActive || (a.lastName || "").localeCompare(b.lastName || "");
+                } else if (this.sortBy === "inactive_first") {
+                    const aActive = a.memberships.length && (a.memberships[0].status.includes("Active") || a.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    const bActive = b.memberships.length && (b.memberships[0].status.includes("Active") || b.memberships[0].status.includes("Paid")) ? 1 : 0;
+                    return aActive - bActive || (a.lastName || "").localeCompare(b.lastName || "");
                 }
                 return 0;
             });
@@ -191,6 +199,8 @@
                             <option value="first_name">Sort by: First Name</option>
                             <option value="name_asc">Name (A–Z)</option>
                             <option value="name_desc">Name (Z–A)</option>
+                            <option value="active_first">Sort by: Active Status</option>
+                            <option value="inactive_first">Sort by: Inactive Status</option>
                             <option value="latest">Sort by: Latest Member</option>
                             <option value="oldest">Sort by: Oldest Member</option>
                             <option value="prc">Sort by: PRC Number</option>
