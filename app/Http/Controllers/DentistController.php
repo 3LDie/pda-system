@@ -57,7 +57,7 @@ class DentistController extends Controller
                 'active_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
                     return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                                           ->where('membership_year', $currentFiscalYear)
-                                          ->filter(function($m) { return str_contains($m->status, 'Active'); })
+                                          ->filter(function($m) { return str_contains($m->status, 'Active') || str_contains($m->status, 'LM'); })
                                           ->isNotEmpty();
                 })->count(),
                 'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
@@ -69,7 +69,7 @@ class DentistController extends Controller
                     $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                         ->where('membership_year', $currentFiscalYear)
                         ->filter(function($m) {
-                            return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                            return str_contains($m->status, 'Active') || str_contains($m->status, 'LM') || $m->status === 'Pending';
                         })->isNotEmpty();
                     return !$hasActiveOrPending;
                 })->count(),
@@ -167,10 +167,10 @@ class DentistController extends Controller
 
     public function import(Request $request)
     {
-        set_time_limit(120); 
+        set_time_limit(180); 
 
         $request->validate([
-            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:10240'],
         ]);
 
         $file = $request->file('csv_file');
@@ -184,7 +184,7 @@ class DentistController extends Controller
         $header = null;
         while (($row = fgetcsv($handle, 1000, ',')) !== false) {
             $rowLower = array_map(fn($item) => strtolower(trim(preg_replace('/[\x{FEFF}]/u', '', $item))), $row);
-            if (in_array('surname', $rowLower) || in_array('prc number', $rowLower)) {
+            if (in_array('surname', $rowLower) || in_array('prc no.', $rowLower) || in_array('prc number', $rowLower)) {
                 $header = $rowLower;
                 break;
             }
@@ -192,94 +192,128 @@ class DentistController extends Controller
 
         if (!$header) {
             fclose($handle);
-            return back()->withErrors(['csv_file' => 'Could not find valid column headers (SURNAME, PRC NUMBER) in the CSV file.']);
+            return back()->withErrors(['csv_file' => 'Could not find valid column headers (SURNAME, PRC NO.) in the CSV file.']);
         }
 
         $defaultPasswordHash = Hash::make('password123');
-
         $importedCount = 0;
+        
         DB::beginTransaction();
 
         try {
             while (($row = fgetcsv($handle, 1000, ',')) !== false) {
-                if (count($row) < count($header)) {
+                if (empty($row) || count($row) < count($header)) {
                     continue; 
                 }
+                
                 $data = array_combine($header, $row);
 
                 $surname = trim($data['surname'] ?? '');
-                $givenName = trim($data['given name'] ?? $data['given nam'] ?? '');
-                $middleInitial = trim($data['middle initial'] ?? $data['middle ini'] ?? '');
-                
-                if (empty($surname) || empty($givenName)) {
+                $givenName = trim($data['given name'] ?? '');
+                if (empty($surname) && empty($givenName)) {
                     continue; 
                 }
 
+                $middleInitial = trim($data['middle initial'] ?? '');
                 $fullName = $surname . ', ' . $givenName;
                 if (!empty($middleInitial)) {
                     $initialLetter = strtoupper(substr($middleInitial, 0, 1));
                     $fullName .= ' ' . $initialLetter . '.';
                 }
 
-                $prcNo = trim($data['prc number'] ?? $data['prc numb'] ?? $data['prc_no'] ?? null);
+                $prcNo = trim($data['prc no.'] ?? $data['prc number'] ?? $data['prc_no'] ?? null);
                 if (!$prcNo || $prcNo === '0') {
                     continue; 
                 }
 
+                $email = trim($data['e-mail address'] ?? $data['email'] ?? '');
+                if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                    $email = 'dentist_' . preg_replace('/[^0-9]/', '', $prcNo) . '@pda.local';
+                }
+
+                $contact = trim($data['contact no.'] ?? $data['contact_no'] ?? 'N/A');
+                $gender = trim($data['gender'] ?? null);
+                $birthdateRaw = trim($data['birthdate'] ?? '');
+                $birthdate = !empty($birthdateRaw) ? date('Y-m-d', strtotime($birthdateRaw)) : '1990-01-01';
+                
+                $prcExpiryRaw = trim($data['prc expiry date'] ?? '');
+                $prcExpiry = !empty($prcExpiryRaw) ? date('Y-m-d', strtotime($prcExpiryRaw)) : null;
+
+                // Update or Create User
+                $user = User::firstOrCreate(
+                    ['email' => $email],
+                    [
+                        'name' => $fullName,
+                        'password' => $defaultPasswordHash,
+                        'role' => 'member',
+                    ]
+                );
+
+                // Update or Create Dentist Profile
                 $existingProfile = DB::table('dentist_profiles')->where('prc_no', $prcNo)->first();
+
                 if ($existingProfile) {
-                    continue; 
-                }
-
-                $email = 'dentist_' . preg_replace('/[^0-9]/', '', $prcNo) . '@pda.local';
-
-                $user = User::create([
-                    'name' => $fullName,
-                    'email' => $email,
-                    'password' => $defaultPasswordHash,
-                    'role' => 'member',
-                ]);
-
-                $profileId = DB::table('dentist_profiles')->insertGetId([
-                    'user_id' => $user->id,
-                    'full_name' => $fullName,
-                    'prc_no' => $prcNo,
-                    'date_of_birth' => '1990-01-01',
-                    'contact_no' => $data['contact no.'] ?? $data['contact_no'] ?? 'N/A',
-                    'email_address' => $email,
-                    'home_address' => 'N/A',
-                    'clinic_address' => 'N/A',
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-
-                foreach ($header as $originalHeaderName) {
-                    $lowerHeader = strtolower(trim($originalHeaderName));
-                    if (preg_match('/(20\d{2}\s*-\s*\d{2,4})/', $lowerHeader, $matches)) {
-                        $rawYear = trim($matches[1]);
-                        $cellValue = trim($data[strtolower($originalHeaderName)] ?? '');
-
-                        if (!empty($cellValue) && $cellValue !== '0' && !str_contains($cellValue, '###')) {
-                            DB::table('pda_memberships')->insertOrIgnore([
-                                'dentist_profile_id' => $profileId,
-                                'membership_year' => $rawYear,
-                                'status' => 'Active (Ref: ' . $cellValue . ')',
-                                'created_at' => now(),
-                                'updated_at' => now(),
-                            ]);
-                        }
-                    }
-                }
-
-                $hasMemberships = DB::table('pda_memberships')->where('dentist_profile_id', $profileId)->exists();
-                if (!$hasMemberships) {
-                    DB::table('pda_memberships')->insert([
-                        'dentist_profile_id' => $profileId,
-                        'membership_year' => '2026-27',
-                        'status' => 'Active (Ref: ' . date('M-y') . ')',
+                    $profileId = $existingProfile->id;
+                    DB::table('dentist_profiles')->where('id', $profileId)->update([
+                        'full_name' => $fullName,
+                        'last_name' => $surname,
+                        'first_name' => $givenName,
+                        'middle_initial' => $middleInitial,
+                        'gender' => $gender,
+                        'contact_no' => $contact,
+                        'email_address' => $email,
+                        'date_of_birth' => $birthdate,
+                        'prc_expiry_date' => $prcExpiry,
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    $profileId = DB::table('dentist_profiles')->insertGetId([
+                        'user_id' => $user->id,
+                        'full_name' => $fullName,
+                        'last_name' => $surname,
+                        'first_name' => $givenName,
+                        'middle_initial' => $middleInitial,
+                        'gender' => $gender,
+                        'prc_no' => $prcNo,
+                        'date_of_birth' => $birthdate,
+                        'prc_expiry_date' => $prcExpiry,
+                        'contact_no' => $contact,
+                        'email_address' => $email,
+                        'home_address' => 'N/A',
+                        'clinic_address' => 'N/A',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
+                }
+
+                // Parse multi-year columns (2019 to 2026)
+                foreach ($header as $originalHeaderName) {
+                    $cleanHeader = trim($originalHeaderName);
+                    if (preg_match('/^(20\d{2})$/', $cleanHeader, $matches)) {
+                        $year = $matches[1];
+                        $cellValue = trim($data[strtolower($originalHeaderName)] ?? '');
+
+                        if (!empty($cellValue) && $cellValue !== '0' && strtolower($cellValue) !== 'nan') {
+                            $status = 'Active';
+                            if (stripos($cellValue, 'lifetime') !== false || stripos($cellValue, 'lm') !== false) {
+                                $status = 'LM - Lifetime Member';
+                            } else {
+                                $status = 'Paid (Ref: ' . $cellValue . ')';
+                            }
+
+                            DB::table('pda_memberships')->updateOrInsert(
+                                [
+                                    'dentist_profile_id' => $profileId,
+                                    'membership_year' => $year,
+                                ],
+                                [
+                                    'status' => $status,
+                                    'updated_at' => now(),
+                                    'created_at' => now(),
+                                ]
+                            );
+                        }
+                    }
                 }
 
                 $importedCount++;
@@ -447,7 +481,7 @@ class DentistController extends Controller
 
                 $latest = $memberships->first();
                 
-                $sustaining = ($latest && (str_contains($latest->status, 'Active') || str_contains($latest->status, 'Paid'))) 
+                $sustaining = ($latest && (str_contains($latest->status, 'Active') || str_contains($latest->status, 'Paid') || str_contains($latest->status, 'LM'))) 
                     ? $latest->membership_year . ' (' . $latest->status . ')' 
                     : 'N/A';
                 
