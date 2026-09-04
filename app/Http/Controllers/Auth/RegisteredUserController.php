@@ -62,6 +62,11 @@ class RegisteredUserController extends Controller
                 'user_id'       => $user->id,
                 'full_name'     => $formattedName,
                 'email_address' => $request->email,
+                'prc_no'        => 'PENDING-' . rand(1000, 9999), // Fallback to avoid NOT NULL errors
+                'date_of_birth' => '1990-01-01',
+                'contact_no'    => 'N/A',
+                'home_address'  => 'N/A',
+                'clinic_address'=> 'N/A',
                 'created_at'    => now(),
                 'updated_at'    => now(),
             ]);

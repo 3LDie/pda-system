@@ -15,6 +15,7 @@ Route::get('/', function () {
 Route::get('/admin_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('admin.login');
 Route::get('/member_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('member.login');
 Route::get('/register_page', [RegisteredUserController::class, 'create'])->name('register.page');
+Route::post('/register_page', [RegisteredUserController::class, 'store'])->name('register.store'); // Added missing route
 
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');

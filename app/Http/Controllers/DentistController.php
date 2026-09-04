@@ -131,23 +131,25 @@ class DentistController extends Controller
             ]);
 
             $profileId = DB::table('dentist_profiles')->insertGetId([
-                'user_id'        => $dentist->id,
-                'full_name'      => $formattedName,
-                'email_address'  => $validated['email_address'],
-                'profile_image'  => $imagePath,
-                'prc_no'         => $validated['prc_no'],
-                'date_of_birth'  => $validated['date_of_birth'],
-                'contact_no'     => $validated['contact_no'],
-                'home_address'   => $validated['home_address'],
-                'clinic_address' => $validated['clinic_address'],
-                'created_at'     => now(),
-                'updated_at'     => now(),
+                'user_id'       => $dentist->id,
+                'full_name'     => $formattedName,
+                'email_address' => $validated['email_address'],
+                'profile_image' => $imagePath,
+                'prc_no'        => $validated['prc_no'],
+                'date_of_birth' => $validated['date_of_birth'],
+                'contact_no'    => $validated['contact_no'],
+                'home_address'  => $validated['home_address'],
+                'clinic_address'=> $validated['clinic_address'],
+                'created_at'    => now(),
+                'updated_at'    => now(),
             ]);
+
+            $formattedStatus = $validated['payment_status'] . ' (Ref: ' . date('M-y') . ')';
 
             DB::table('pda_memberships')->insert([
                 'dentist_profile_id' => $profileId, 
                 'membership_year'    => $validated['membership_year'], 
-                'status'             => $validated['payment_status'], 
+                'status'             => $formattedStatus, 
                 'created_at'         => now(),
                 'updated_at'         => now(),
             ]);
@@ -165,7 +167,7 @@ class DentistController extends Controller
 
     public function import(Request $request)
     {
-        set_time_limit(120); // Extend execution time for large rosters
+        set_time_limit(120); 
 
         $request->validate([
             'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
@@ -193,7 +195,6 @@ class DentistController extends Controller
             return back()->withErrors(['csv_file' => 'Could not find valid column headers (SURNAME, PRC NUMBER) in the CSV file.']);
         }
 
-        // Hash the default password ONCE outside the loop to prevent timeouts
         $defaultPasswordHash = Hash::make('password123');
 
         $importedCount = 0;
@@ -252,7 +253,6 @@ class DentistController extends Controller
                     'updated_at' => now(),
                 ]);
 
-                // Scan historical columns for year-based payments (e.g., "2017 - 18")
                 foreach ($header as $originalHeaderName) {
                     $lowerHeader = strtolower(trim($originalHeaderName));
                     if (preg_match('/(20\d{2}\s*-\s*\d{2,4})/', $lowerHeader, $matches)) {
@@ -276,7 +276,7 @@ class DentistController extends Controller
                     DB::table('pda_memberships')->insert([
                         'dentist_profile_id' => $profileId,
                         'membership_year' => '2026-27',
-                        'status' => 'Active',
+                        'status' => 'Active (Ref: ' . date('M-y') . ')',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -371,11 +371,16 @@ class DentistController extends Controller
         ]);
 
         if ($request->has('membership_year') && $request->has('payment_status')) {
+            $formattedStatus = $validated['payment_status'];
+            if (!str_contains($formattedStatus, 'Ref:')) {
+                $formattedStatus .= ' (Ref: ' . date('M-y') . ')';
+            }
+
             DB::table('pda_memberships')
                 ->where('dentist_profile_id', $existingProfile->id)
                 ->update([
                     'membership_year' => $validated['membership_year'],
-                    'status'          => $validated['payment_status'],
+                    'status'          => $formattedStatus,
                     'updated_at'      => now(),
                 ]);
         }
@@ -483,10 +488,12 @@ class DentistController extends Controller
 
         $profile = DB::table('dentist_profiles')->where('user_id', $id)->first();
 
+        $formattedStatus = $validated['payment_status'] . ' (Ref: ' . date('M-y') . ')';
+
         DB::table('pda_memberships')->insert([
             'dentist_profile_id' => $profile->id,
             'membership_year'    => $validated['membership_year'],
-            'status'             => $validated['payment_status'],
+            'status'             => $formattedStatus,
             'created_at'         => now(),
             'updated_at'         => now(),
         ]);

@@ -11,7 +11,7 @@
         </p>
     </div>
 
-    <form method="POST" action="{{ request()->is('admin/*') ? route('admin.register.store') : route('register') }}" class="space-y-4">
+    <form method="POST" action="{{ url('/register_page') }}" class="space-y-4">
         @csrf
 
         <!-- Full Name (Surname, First Name, Middle Name) -->
