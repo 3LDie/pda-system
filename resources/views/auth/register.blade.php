@@ -3,11 +3,15 @@
         <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-600 text-white mb-2 shadow-md">
             <span class="font-bold text-lg">PDA</span>
         </div>
-        <h2 class="text-xl font-bold text-gray-900 dark:text-white">Member Registration</h2>
-        <p class="text-sm text-gray-500 dark:text-gray-400">Create your chapter portal account</p>
+        <h2 class="text-xl font-bold text-gray-900 dark:text-white">
+            {{ request()->is('admin/*') ? __('Register System Admin') : __('Member Registration') }}
+        </h2>
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+            {{ request()->is('admin/*') ? __('Create a new administrative portal account') : __('Create your chapter portal account') }}
+        </p>
     </div>
 
-    <form method="POST" action="{{ route('register') }}" class="space-y-4">
+    <form method="POST" action="{{ request()->is('admin/*') ? route('admin.register.store') : route('register') }}" class="space-y-4">
         @csrf
 
         <!-- Full Name (Surname, First Name, Middle Name) -->
@@ -51,12 +55,16 @@
         </div>
 
         <div class="flex items-center justify-between mt-4 pt-2">
-            <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
-                {{ __('Already registered?') }}
-            </a>
+            @if(!request()->is('admin/*'))
+                <a class="underline text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 dark:focus:ring-offset-gray-800" href="{{ route('login') }}">
+                    {{ __('Already registered?') }}
+                </a>
+            @else
+                <div></div>
+            @endif
 
             <x-primary-button class="ms-4 bg-[#5045EB] hover:bg-[#3c37d2]">
-                {{ __('Register') }}
+                {{ request()->is('admin/*') ? __('Create Admin') : __('Register') }}
             </x-primary-button>
         </div>
 

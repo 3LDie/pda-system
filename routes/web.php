@@ -36,8 +36,8 @@ Route::middleware(['auth', 'password.check'])->group(function () {
 
     // 🔒 STRICT ADMIN LOCKDOWN GROUP
     Route::middleware('admin')->group(function () {
-        Route::get('/admin/register', [RegisteredUserController::class, 'create'])->name('register');
-        Route::post('/admin/register', [RegisteredUserController::class, 'store']);
+        Route::get('/admin/register', [RegisteredUserController::class, 'createAdmin'])->name('admin.register.form');
+        Route::post('/admin/register', [RegisteredUserController::class, 'storeAdmin'])->name('admin.register.store');
 
         Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
         Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
@@ -49,7 +49,6 @@ Route::middleware(['auth', 'password.check'])->group(function () {
         Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
         Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
         Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
-        
     });
 });
 
