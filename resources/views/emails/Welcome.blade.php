@@ -9,7 +9,8 @@
         
         <!-- Header Banner -->
         <div style="background-color: #7e22ce; padding: 30px; text-align: center; color: #ffffff;">
-            <img src="{{ url('images/pda_logo.jpg') }}" alt="PDA Logo" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; background-color: #ffffff; padding: 2px; display: inline-block;">
+            <!-- PDA Logo Image with fallback or absolute asset URL -->
+            <img src="{{ $message->embed(public_path('images/pda_logo.jpg')) }}" alt="PDA Logo" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; background-color: #ffffff; padding: 2px; display: inline-block;">
             <h1 style="margin: 0; font-size: 24px;">Welcome to the PDA Member Portal</h1>
         </div>
 
@@ -27,9 +28,9 @@
 
             <p style="color: #ef4444; font-size: 13px; font-style: italic;">* Security reminder: Please navigate straight to your profile configuration right after logging in to change this temporary password to a secure personal one.</p>
 
-            <!-- Action Button -->
+            <!-- Action Button with Restored Login Link -->
             <div style="text-align: center; margin-top: 35px;">
-                <a href="{{ url('/login') }}" style="background-color: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: bold; border-radius: 6px; display: inline-block; box-shadow: 0 2px 4px rgba(126, 34, 206, 0.2);">
+                <a href="{{ route('login') }}" style="background-color: #7e22ce; color: #ffffff; text-decoration: none; padding: 12px 30px; font-weight: bold; border-radius: 6px; display: inline-block; box-shadow: 0 2px 4px rgba(126, 34, 206, 0.2);">
                     Log In to My Portal
                 </a>
             </div>
