@@ -176,8 +176,18 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.clinic"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm">
                                         <template x-for="membership in dentist.memberships">
-                                            <span :class="membership.status && (membership.status.includes('Active') || membership.status.includes('Paid')) ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 border dark:border-green-800/30' : 'bg-yellow-100 text-yellow-800 dark:bg-amber-950/40 dark:text-amber-300 border dark:border-amber-800/30'"
+                                            <span :class="membership.status && (membership.status.toUpperCase().includes('LM') || membership.status.toLowerCase().includes('lifetime')) 
+                                                  ? 'bg-purple-200 text-purple-900 dark:bg-purple-900/60 dark:text-purple-200 border border-purple-400 dark:border-purple-700 font-bold shadow-sm' 
+                                                  : (membership.status && (membership.status.includes('Active') || membership.status.includes('Paid')) 
+                                                      ? 'bg-green-100 text-green-800 dark:bg-green-950/40 dark:text-green-300 border dark:border-green-800/30' 
+                                                      : 'bg-yellow-100 text-yellow-800 dark:bg-amber-950/40 dark:text-amber-300 border dark:border-amber-800/30')"
                                                   class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium mr-1 mb-1 group border border-transparent">
+                                                
+                                                <!-- Crown Icon for Lifetime Members -->
+                                                <template x-if="membership.status && (membership.status.toUpperCase().includes('LM') || membership.status.toLowerCase().includes('lifetime'))">
+                                                    <span class="mr-1">👑</span>
+                                                </template>
+
                                                 <span x-text="membership.year + ' — ' + membership.status"></span>
                                                 
                                                 @if(auth()->user()->role === 'admin')
