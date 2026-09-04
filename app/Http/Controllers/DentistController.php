@@ -62,14 +62,14 @@ class DentistController extends Controller
                 })->count(),
                 'pending_members' => $dentists->filter(function($dentist) use ($allMemberships) {
                     return $allMemberships->where('dentist_profile_id', $dentist->profile_id)
-                                          ->where('status', 'Pending')
+                                          ->filter(function($m) { return str_contains($m->status, 'Pending'); })
                                           ->isNotEmpty();
                 })->count(),
                 'inactive_members' => $dentists->filter(function($dentist) use ($allMemberships, $currentFiscalYear) {
                     $hasActiveOrPending = $allMemberships->where('dentist_profile_id', $dentist->profile_id)
                         ->where('membership_year', $currentFiscalYear)
                         ->filter(function($m) {
-                            return str_contains($m->status, 'Active') || $m->status === 'Pending';
+                            return str_contains($m->status, 'Active') || str_contains($m->status, 'Pending');
                         })->isNotEmpty();
                     return !$hasActiveOrPending;
                 })->count(),
