@@ -20,11 +20,15 @@
 
                 <div class="bg-white dark:bg-gray-700 dark:text-gray-100 overflow-hidden shadow-xl sm:rounded-xl border border-gray-100 dark:border-gray-600 p-8">
                 <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-slate-100 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-200 dark:border-purple-900/40 p-8 transition-colors duration-200">
+<<<<<<< HEAD
  (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
                     <div class="flex flex-col md:flex-row items-center gap-8">
+=======
+                    <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+>>>>>>> 638a0ff (Fix 403 authorization error on member profile photo upload by adding dedicated route and removing duplicate dashboard view)
                         
-                        {{-- Member Photo Container Slot --}}
-                        <div class="shrink-0">
+                        {{-- Member Photo Container & Direct Upload Slot --}}
+                        <div class="flex flex-col items-center shrink-0 space-y-3">
                             <div class="w-32 h-32 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-950 border-4 border-purple-500/40 shadow-inner flex items-center justify-center">
                                 @if(isset($profile) && $profile->profile_image)
                                     <img src="{{ asset('storage/' . $profile->profile_image) }}" 
@@ -34,6 +38,20 @@
                                     <span class="text-4xl select-none">📸</span>
                                 @endif
                             </div>
+
+                            {{-- Direct Photo Upload Form --}}
+                            @if(isset($profile))
+                                <form action="{{ route('member.update-photo') }}" method="POST" enctype="multipart/form-data" class="flex flex-col items-center">
+                                    @csrf
+                                    @method('PUT')
+                                    
+                                    <input type="file" name="profile_image" id="portal_profile_image" class="hidden" accept="image/jpeg,image/png,image/jpg" onchange="this.form.submit()">
+                                    
+                                    <label for="portal_profile_image" class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-700 shadow-sm text-xs font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition cursor-pointer">
+                                        📷 Update Photo
+                                    </label>
+                                </form>
+                            @endif
                         </div>
 
                         {{-- Member Info Grid --}}

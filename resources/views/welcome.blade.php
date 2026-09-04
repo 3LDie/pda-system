@@ -59,57 +59,131 @@ if (auth()->check()) {
         </div>
     </header>
 
-    <!-- Main Content Section -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 my-auto w-full">
+
+</div>
+<!-- Main Content Section -->
+<main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 w-full overflow-hidden">
+
+    <!-- Background Logo -->
+    <div class="absolute inset-0 flex justify-center pointer-events-none z-0 overflow-hidden">
+        <img
+            src="{{ asset('images/pda_logo.jpg') }}"
+            alt=""
+            class="absolute w-[700px] max-w-none opacity-15 object-contain"
+            style="top: -0px;"
+        >
+    </div>
+
+    <!-- Main Content -->
+    <div class="relative z-10">
+
+        <!-- Heading -->
         <div class="text-center max-w-3xl mx-auto mb-16">
-            <span class="inline-block px-3.5 py-1 text-xs font-semibold tracking-wider text-purple-700 dark:text-purple-300 uppercase bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-900/50 rounded-full mb-4">
+
+            <span class="inline-block px-3.5 py-1 text-xs font-semibold tracking-wider
+                         text-purple-700 dark:text-purple-300 uppercase
+                         bg-purple-50 dark:bg-purple-950/40
+                         border border-purple-200 dark:border-purple-900/50
+                         rounded-full mb-4">
                 Digital Chapter Portal
             </span>
-            <h2 class="text-4xl sm:text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-6">
+
+            <h2 class="text-4xl sm:text-5xl font-extrabold
+                       text-slate-900 dark:text-white
+                       tracking-tight mb-6">
                 Streamlining Member Records & Practice Tracking
             </h2>
+
             <p class="text-lg text-slate-600 dark:text-slate-300 leading-relaxed">
-                Welcome to the official local information management portal. Securely track multi-year membership statuses, manage chapter rosters, and maintain professional dentist files.
+                Welcome to the official local information management portal.
+                Securely track multi-year membership statuses, manage chapter
+                rosters, and maintain professional dentist files.
             </p>
+
         </div>
 
         <!-- Portal Navigation Cards -->
         <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            
-            <!-- Admin Portal Gateway Card -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-8 flex flex-col justify-between hover:shadow-md transition">
+
+            <!-- Admin Portal -->
+            <div class="bg-white dark:bg-slate-900
+                        rounded-2xl border border-slate-200/80 dark:border-slate-800
+                        shadow-sm p-8 flex flex-col justify-between
+                        hover:shadow-md transition">
+
                 <div>
-                    <div class="w-12 h-12 bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 rounded-xl flex items-center justify-center font-bold text-xl mb-6 shadow-inner border border-purple-100 dark:border-purple-900">
+                    <div class="w-12 h-12
+                                bg-purple-50 dark:bg-purple-950/50
+                                text-purple-700 dark:text-purple-300
+                                rounded-xl flex items-center justify-center
+                                font-bold text-xl mb-6 shadow-inner
+                                border border-purple-100 dark:border-purple-900">
                         🛡️
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Administrator Gateway</h3>
+
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
+                        Administrator Gateway
+                    </h3>
+
                     <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-6">
-                        Manage local chapter rows, trace automated multi-year membership statuses, register new dentists, export rosters, and oversee system audit logs.
+                        Manage local chapter rows, trace automated multi-year
+                        membership statuses, register new dentists, export
+                        rosters, and oversee system audit logs.
                     </p>
                 </div>
-                <a href="{{ route('admin.login') }}" class="w-full text-center py-3 px-4 bg-slate-900 dark:bg-slate-800 hover:bg-slate-800 dark:hover:bg-slate-700 text-white font-medium rounded-xl transition shadow-sm">
+
+                <a href="{{ route('admin.login') }}"
+                   class="w-full text-center py-3 px-4
+                          bg-slate-900 dark:bg-slate-800
+                          hover:bg-slate-800 dark:hover:bg-slate-700
+                          text-white font-medium rounded-xl transition shadow-sm">
                     Access Admin Portal
                 </a>
+
             </div>
 
-            <!-- Member Portal Gateway Card -->
-            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-8 flex flex-col justify-between hover:shadow-md transition">
+            <!-- Member Portal -->
+            <div class="bg-white dark:bg-slate-900
+                        rounded-2xl border border-slate-200/80 dark:border-slate-800
+                        shadow-sm p-8 flex flex-col justify-between
+                        hover:shadow-md transition">
+
                 <div>
-                    <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center font-bold text-xl mb-6 shadow-inner border border-emerald-100 dark:border-emerald-900">
+                    <div class="w-12 h-12
+                                bg-emerald-50 dark:bg-emerald-950/50
+                                text-emerald-600 dark:text-emerald-400
+                                rounded-xl flex items-center justify-center
+                                font-bold text-xl mb-6 shadow-inner
+                                border border-emerald-100 dark:border-emerald-900">
                         🦷
                     </div>
-                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">Member Portal</h3>
+
+                    <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3">
+                        Member Portal
+                    </h3>
+
                     <p class="text-slate-600 dark:text-slate-300 text-sm leading-relaxed mb-6">
-                        View professional dentist credentials, check active standing verification, track membership logs, and keep clinic location details updated.
+                        View professional dentist credentials, check active
+                        standing verification, track membership logs, and keep
+                        clinic location details updated.
                     </p>
                 </div>
-                <a href="{{ route('member.login') }}" class="w-full text-center py-3 px-4 bg-purple-700 hover:bg-purple-800 text-white font-medium rounded-xl transition shadow-sm">
+
+                <a href="{{ route('member.login') }}"
+                   class="w-full text-center py-3 px-4
+                          bg-purple-700 hover:bg-purple-800
+                          text-white font-medium rounded-xl transition shadow-sm">
                     Access Member Portal
                 </a>
+
             </div>
 
         </div>
-    </main>
+
+    </div>
+
+</main>
+
 
     <!-- Footer -->
     <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-6 mt-12">

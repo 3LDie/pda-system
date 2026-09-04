@@ -30,6 +30,9 @@ Route::middleware(['auth', 'password.check'])->group(function () {
 
     // 🔓 Accessible by both Admin and Member
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
+    
+    // 👤 Dedicated Member Profile Photo Update Route
+    Route::put('/member/photo/update', [DentistController::class, 'updatePhoto'])->name('member.update-photo');
 
     // 🔒 STRICT ADMIN LOCKDOWN GROUP
     Route::middleware('admin')->group(function () {
@@ -46,6 +49,7 @@ Route::middleware(['auth', 'password.check'])->group(function () {
         Route::get('/dentists/{id}/renew', [DentistController::class, 'renew'])->name('dentists.renew');
         Route::post('/dentists/{id}/renew', [DentistController::class, 'storeRenewal'])->name('dentists.storeRenewal');
         Route::delete('/memberships/{id}', [DentistController::class, 'destroyMembership'])->name('memberships.destroy');
+        
     });
 });
 
