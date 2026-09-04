@@ -17,11 +17,10 @@
                 </div>
             @else
                 {{-- 🔒 Non-Admin (Member) Portal Layout --}}
-<<<<<<< HEAD
+ 
                 <div class="bg-white dark:bg-gray-700 dark:text-gray-100 overflow-hidden shadow-xl sm:rounded-xl border border-gray-100 dark:border-gray-600 p-8">
-=======
+
                 <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-slate-100 overflow-hidden shadow-xl sm:rounded-2xl border border-gray-200 dark:border-purple-900/40 p-8 transition-colors duration-200">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
                     <div class="flex flex-col md:flex-row items-center gap-8">
                         
                         {{-- Member Photo Container Slot --}}
@@ -57,11 +56,11 @@
                                             </span>
                                         </span>
                                     @else
-<<<<<<< HEAD
+ 
                                         <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-rose-100 dark:bg-rose-900/30 text-rose-800 dark:text-rose-300 border border-rose-200 dark:border-rose-800/30 shadow-sm">
-=======
+
                                         <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-semibold bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20 shadow-sm">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
+ 
                                             No Active Record Logged
                                         </span>
                                     @endif

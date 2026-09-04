@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<<<<<<< HEAD
+ 
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-force-theme="light">
-=======
+
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" :class="{ 'dark': darkMode }">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
+ 
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

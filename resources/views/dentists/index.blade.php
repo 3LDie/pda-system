@@ -5,19 +5,21 @@
         </h2>
     </x-slot>
 
-    <!-- ✅ Fixed: Bypasses Eloquent relationship calls by querying pda_memberships directly via profile_id -->
     <div class="py-12" x-data='{ 
         search: "",
-        sortBy: "name_asc",
+        sortBy: "last_name",
         dentists: [
             @foreach($dentists as $dentist)
             {
                 "id": "{{ $dentist->id }}",
                 "name": {!! json_encode($dentist->full_name ?? "") !!},
-                "image": "{{ $dentist->profile_image ? asset("storage/" . $dentist->profile_image) : "" }}",
+                "lastName": {!! json_encode($dentist->last_name ?? $dentist->full_name ?? "") !!},
+                "firstName": {!! json_encode($dentist->first_name ?? "") !!},
                 "prc": "{{ $dentist->prc_no ?? "" }}",
                 "contact": "{{ $dentist->contact_no ?? "" }}",
                 "clinic": {!! json_encode($dentist->clinic_address ?? "") !!},
+                "birthday": "{{ $dentist->birthdate ?? "" }}",
+                "createdAt": "{{ $dentist->created_at ?? "" }}",
                 "memberships": [
                     @if($dentist->profile_id)
                         @foreach(DB::table("pda_memberships")->where("dentist_profile_id", $dentist->profile_id)->orderBy("membership_year", "desc")->take(2)->get() as $membership)
@@ -35,88 +37,88 @@
         matches(dentist) {
             if (!this.search) return true;
             const term = this.search.toLowerCase();
-            
             const nameMatch = dentist.name ? dentist.name.toLowerCase().includes(term) : false;
             const prcMatch = dentist.prc ? dentist.prc.toLowerCase().includes(term) : false;
-            
             return nameMatch || prcMatch;
         },
-        get sortedDentists() {
-       let list = [...this.dentists];
+        get filteredDentists() {
+            let filtered = this.dentists.filter(d => this.matches(d));
 
-        switch (this.sortBy) {
-            case "name_asc":
-                list.sort((a, b) => a.name.localeCompare(b.name));
-                break;
-
-            case "name_desc":
-                list.sort((a, b) => b.name.localeCompare(a.name));
-                break;
-
-            case "license_asc":
-                list.sort((a, b) => a.prc.localeCompare(b.prc));
-                break;
-
-            case "year_desc":
-                list.sort((a, b) => {
+            return filtered.sort((a, b) => {
+                if (this.sortBy === "last_name") {
+                    return (a.lastName || "").localeCompare(b.lastName || "");
+                } else if (this.sortBy === "first_name") {
+                    return (a.firstName || "").localeCompare(b.firstName || "");
+                } else if (this.sortBy === "name_asc") {
+                    return (a.name || "").localeCompare(b.name || "");
+                } else if (this.sortBy === "name_desc") {
+                    return (b.name || "").localeCompare(a.name || "");
+                } else if (this.sortBy === "latest") {
+                    return new Date(b.createdAt) - new Date(a.createdAt);
+                } else if (this.sortBy === "oldest") {
+                    return new Date(a.createdAt) - new Date(b.createdAt);
+                } else if (this.sortBy === "prc" || this.sortBy === "license_asc") {
+                    return (a.prc || "").localeCompare(b.prc || "", undefined, {numeric: true});
+                } else if (this.sortBy === "birthday" || this.sortBy === "birthday_asc") {
+                    return new Date(a.birthday || "9999-12-31") - new Date(b.birthday || "9999-12-31");
+                } else if (this.sortBy === "birthday_desc") {
+                    return new Date(b.birthday || "1900-01-01") - new Date(a.birthday || "1900-01-01");
+                } else if (this.sortBy === "year_desc") {
                     const ay = a.memberships.length ? parseInt(a.memberships[0].year) : 0;
                     const by = b.memberships.length ? parseInt(b.memberships[0].year) : 0;
                     return by - ay;
-                });
-                break;
-
-            case "year_asc":
-                list.sort((a, b) => {
+                } else if (this.sortBy === "year_asc") {
                     const ay = a.memberships.length ? parseInt(a.memberships[0].year) : 9999;
                     const by = b.memberships.length ? parseInt(b.memberships[0].year) : 9999;
                     return ay - by;
-                });
-                break;
-            case "birthday_asc":
-                list.sort((a, b) => new Date(a.birthday) - new Date(b.birthday));
-                break;
-
-            case "birthday_desc":
-                list.sort((a, b) => new Date(b.birthday) - new Date(a.birthday));
-                break;
-            }
-
-        return list;
-    },
+                }
+                return 0;
+            });
+        },
         get filteredCount() {
-            return this.dentists.filter(d => this.matches(d)).length;
+            return this.filteredDentists.length;
         }
     }'>
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden shadow-xl sm:rounded-2xl p-6 border border-gray-200 dark:border-purple-900/40 transition-colors duration-200">
                 
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-6 gap-4">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-6 gap-4">
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Membership Records</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3">
+                    
+                    <div class="flex flex-wrap items-center gap-2.5">
                         @if(auth()->user()->role === 'admin')
-                            <a href="{{ route('register') }}" 
+                            <a href="{{ route('admin.register.form') }}" 
                                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition duration-150 ease-in-out">
                                 <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                                 </svg>
                                 Add System Admin
                             </a>
+
+                            <button onclick="document.getElementById('csvImportModal').classList.remove('hidden')"
+                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                                <svg class="-ml-1 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Import CSV
+                            </button>
                         @endif
 
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
-                            Export Roster (CSV)
+                           class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                            <svg class="-ml-1 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Export CSV
                         </a>
+
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#5045EB] dark:bg-purple-600 hover:bg-[#3c37d2] dark:hover:bg-purple-700 focus:outline-none transition">
-                            Register New Dentist
+                            + Register Dentist
                         </a>
                     </div>
                 </div>
 
+                {{-- Statistics Widgets Grid --}}
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                     <div class="bg-gray-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl p-5 shadow-sm flex items-center justify-between">
                         <div>
@@ -144,34 +146,36 @@
                     </div>
                 </div>
 
-                <div class="mb-6 flex flex-col md:flex-row gap-4">
-                    <select
-                        x-model="sortBy"
-                        class="w-40 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#5045EB]/40 focus:border-[#5045EB]">
+                {{-- Search and Sort Controls Bar --}}
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-6">
+                    <div class="w-full sm:w-1/3">
+                        <input type="text" 
+                               x-model.debounce.300ms="search" 
+                               placeholder="Search by name or PRC number..." 
+                               class="w-full rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500 text-sm">
+                    </div>
+                    <div class="w-full sm:w-auto">
+                        <select x-model="sortBy" 
+                                class="w-full sm:w-auto rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:border-indigo-500 focus:ring-indigo-500 text-sm px-4 py-2">
+                            <option value="last_name">Sort by: Last Name</option>
+                            <option value="first_name">Sort by: First Name</option>
                             <option value="name_asc">Name (A–Z)</option>
                             <option value="name_desc">Name (Z–A)</option>
-                            <option value="license_asc">License Number (Ascending)</option>
+                            <option value="latest">Sort by: Latest Member</option>
+                            <option value="oldest">Sort by: Oldest Member</option>
+                            <option value="prc">Sort by: PRC Number</option>
+                            <option value="birthday">Sort by: Birthday</option>
                             <option value="year_desc">Latest Membership Year (Newest)</option>
                             <option value="year_asc">Latest Membership Year (Oldest)</option>
-                            <option value="birthday_asc">Birthday (Oldest)</option>
-                            <option value="birthday_desc">Birthday (Youngest)</option>
-                            
-                    </select>
-                    <input type="text" 
-                           x-model.debounce.300ms="search" 
-                           placeholder="Search by name or PRC number..." 
-<<<<<<< HEAD
-                           class="w-full md:w-[450px] rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-=======
-                           class="w-full md:w-1/3 rounded-md border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-indigo-500 focus:ring-indigo-500">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
+                        </select>
+                    </div>
                 </div>
 
+                {{-- Table Roster View --}}
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-800">
                         <thead class="bg-gray-50 dark:bg-gray-800/50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider w-16">Photo</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Full Name</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">PRC Number</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Contact No.</th>
@@ -180,27 +184,10 @@
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider text-right">Actions</th>
                             </tr>
                         </thead>
-<<<<<<< HEAD
-                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
-                            <template x-for="dentist in sortedDentists" :key="dentist.id">
-=======
+
                         <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
-                            <template x-for="dentist in dentists">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
+                            <template x-for="dentist in filteredDentists" :key="dentist.id">
                                 <tr x-show="matches(dentist)" x-transition:enter="transition ease-out duration-200">
-                                    <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="w-10 h-10 rounded-full overflow-hidden bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm flex items-center justify-center">
-                                            <template x-if="dentist.image">
-                                                <img :src="dentist.image" 
-                                                     alt="Profile" 
-                                                     class="w-full h-full object-cover" 
-                                                     x-on:error="dentist.image = ''">
-                                            </template>
-                                            <template x-if="!dentist.image">
-                                                <span class="text-gray-400 font-sans text-xs select-none">📸</span>
-                                            </template>
-                                        </div>
-                                    </td>
                                     <td class="px-6 py-4 whitespace-nowrap font-medium text-gray-900 dark:text-gray-100" x-text="dentist.name"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.prc"></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400" x-text="dentist.contact"></td>
@@ -215,13 +202,8 @@
                                                 <form :action="'/memberships/' + membership.id" method="POST" class="inline flex items-center mb-0 ml-1.5" onsubmit="return confirm('Are you sure you want to completely delete this specific membership log year item?');">
                                                     @csrf
                                                     @method('DELETE')
-<<<<<<< HEAD
-                                                    <button type="submit" class="text-gray-400 hover:text-red-650 dark:hover:text-red-400 transition font-bold font-sans text-xs focus:outline-none cursor-pointer">
-                                
-=======
                                                     <button type="submit" class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition font-bold font-sans text-xs focus:outline-none cursor-pointer">
                                                         &times;
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
                                                     </button>
                                                 </form>
                                                 @endif
@@ -237,7 +219,7 @@
 
                             <template x-if="filteredCount === 0">
                                 <tr>
-                                    <td colspan="7" class="px-6 py-10 text-center text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/20">
+                                    <td colspan="6" class="px-6 py-10 text-center text-sm font-medium text-gray-400 dark:text-gray-500 bg-gray-50/50 dark:bg-gray-800/20">
                                         No registered dentists match your current search constraints.
                                     </td>
                                 </tr>
@@ -249,4 +231,25 @@
             </div>
         </div>
     </div>
-</x-app-layout>	
+
+    <!-- CSV Import Modal Window -->
+    <div id="csvImportModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-60 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl text-gray-900 dark:text-gray-100">
+            <h3 class="text-lg font-medium mb-2">Import Dentist Roster (CSV)</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Upload a CSV file containing columns like: <code>full_name, email_address, prc_no, contact_no, home_address, clinic_address, membership_year, payment_status</code>.</p>
+            
+            <form action="{{ route('dentists.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <input type="file" name="csv_file" accept=".csv, .txt" required class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-gray-800 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100">
+                    @error('csv_file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="document.getElementById('csvImportModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-sm rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700">Upload & Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</x-app-layout>
