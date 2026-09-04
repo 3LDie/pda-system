@@ -9,7 +9,7 @@
 
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
-        <link rel="icon" type="image/jpeg" href="{{ asset('images/pda-logo.jpg') }}">
+        <link rel="icon" type="image/jpeg" href="{{ asset('images/pda_logo.jpg') }}">
 
         <script>
             (function () {
@@ -41,19 +41,11 @@
         $isDentistPage = request()->routeIs('dentists.*');
     @endphp
     <body class="font-sans antialiased" data-dentist-mode="{{ $isDentistPage ? '1' : '0' }}">
-<<<<<<< HEAD
-        <div class="min-h-screen bg-gray-100 text-gray-900 transition-colors duration-200 dark:bg-gray-800 dark:text-gray-100">
-            @include('layouts.navigation')
-
-            @isset($header)
-                <header class="bg-white shadow dark:bg-gray-700 dark:border-b dark:border-gray-600 dark:text-gray-100">
-=======
         <div class="min-h-screen bg-gray-100 dark:bg-[#030616] text-slate-900 dark:text-slate-100 transition-colors duration-200">
             @include('layouts.navigation')
 
             @isset($header)
                 <header class="shadow bg-white dark:bg-[#030616] border-b border-gray-200 dark:border-purple-900/40 text-gray-800 dark:text-slate-100 transition-colors duration-200">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>
