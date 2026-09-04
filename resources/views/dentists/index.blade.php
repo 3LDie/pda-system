@@ -83,11 +83,15 @@
                     </div>
                     <div class="flex flex-wrap items-center gap-3">
                         @if(auth()->user()->role === 'admin')
+<<<<<<< HEAD
 
                             <a href="{{ route('register') }}"
                                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none transition duration-150 ease-in-out">
 
                             <a href="{{ route('register') }}" 
+=======
+                            <a href="{{ route('admin.register.form') }}" 
+>>>>>>> 7bc6e27 (Fix admin registration redirection, isolate admin user creation routes, and update admin link reference)
                                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition duration-150 ease-in-out">
 (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
                                 <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
