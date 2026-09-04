@@ -4,61 +4,136 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Mail\WelcomeMemberMail;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules;
-use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
-    /**
-     * Display the registration view.
-     */
     public function create(): View
     {
         return view('auth.register');
     }
 
-    /**
-     * Handle an incoming registration request.
-     *
-     * @throws ValidationException
-     */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()], // Password made optional so admin-created accounts can auto-generate
+            'full_name' => ['required', 'string', 'max:255'],
+            'extension' => ['nullable', 'string', 'max:50'],
+            'email'     => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password'  => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Generate a temporary secure password if none is explicitly provided
-        $plainPassword = $request->password ?? Str::random(10);
+        $rawName = trim($request->full_name);
+        $parts = array_map('trim', explode(',', $rawName));
+        
+        $formattedName = $rawName; 
+        if (count($parts) >= 2) {
+            $surname = $parts[0];
+            $rest = array_values(array_filter(explode(' ', $parts[1])));
+            $firstName = $rest[0] ?? '';
+            $middleName = $rest[1] ?? '';
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($plainPassword),
-        ]);
-
-        // Send the welcome email with the temporary password directly via Brevo SMTP
-        Mail::to($user->email)->send(new WelcomeMemberMail($user, $plainPassword));
-
-        event(new Registered($user));
-
-        // If registered from public view, log them in. If created by admin panel, handle redirection accordingly.
-        if (!Auth::check()) {
-            Auth::login($user);
-            return redirect(route('dashboard', absolute: false));
+            $formattedName = $surname . ', ' . $firstName;
+            if (!empty($middleName)) {
+                $initial = strtoupper(substr($middleName, 0, 1)) . '.';
+                $formattedName .= ' ' . $initial;
+            }
         }
 
-        return redirect()->back()->with('success', 'Member registered successfully and temporary credentials sent via email.');
+        if (!empty($request->extension)) {
+            $formattedName .= ' ' . trim($request->extension);
+        }
+
+        DB::beginTransaction();
+        try {
+            $user = User::create([
+                'name'     => $formattedName,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'role'     => 'member',
+            ]);
+
+            DB::table('dentist_profiles')->insert([
+                'user_id'       => $user->id,
+                'full_name'     => $formattedName,
+                'email_address' => $request->email,
+                'prc_no'        => 'PENDING-' . rand(1000, 9999), // Fallback to avoid NOT NULL errors
+                'date_of_birth' => '1990-01-01',
+                'contact_no'    => 'N/A',
+                'home_address'  => 'N/A',
+                'clinic_address'=> 'N/A',
+                'created_at'    => now(),
+                'updated_at'    => now(),
+            ]);
+
+            DB::commit();
+
+            event(new Registered($user));
+
+            auth()->login($user);
+
+            return redirect(route('dashboard', absolute: false));
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->withErrors(['error' => 'Registration failed: ' . $e->getMessage()]);
+        }
+    }
+
+    public function createAdmin(): View
+    {
+        return view('auth.register');
+    }
+
+    public function storeAdmin(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'full_name' => ['required', 'string', 'max:255'],
+            'extension' => ['nullable', 'string', 'max:50'],
+            'email'     => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
+            'password'  => ['required', 'confirmed', Rules\Password::defaults()],
+        ]);
+
+        $rawName = trim($request->full_name);
+        $parts = array_map('trim', explode(',', $rawName));
+        
+        $formattedName = $rawName; 
+        if (count($parts) >= 2) {
+            $surname = $parts[0];
+            $rest = array_values(array_filter(explode(' ', $parts[1])));
+            $firstName = $rest[0] ?? '';
+            $middleName = $rest[1] ?? '';
+
+            $formattedName = $surname . ', ' . $firstName;
+            if (!empty($middleName)) {
+                $initial = strtoupper(substr($middleName, 0, 1)) . '.';
+                $formattedName .= ' ' . $initial;
+            }
+        }
+
+        if (!empty($request->extension)) {
+            $formattedName .= ' ' . trim($request->extension);
+        }
+
+        DB::beginTransaction();
+        try {
+            User::create([
+                'name'     => $formattedName,
+                'email'    => $request->email,
+                'password' => Hash::make($request->password),
+                'role'     => 'admin',
+            ]);
+
+            DB::commit();
+
+            return redirect()->route('dentists.index')->with('success', 'System Administrator account successfully created!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->withErrors(['error' => 'Registration failed: ' . $e->getMessage()]);
+        }
     }
 }

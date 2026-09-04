@@ -15,6 +15,7 @@ Route::get('/', function () {
 Route::get('/admin_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('admin.login');
 Route::get('/member_login', [App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'create'])->name('member.login');
 Route::get('/register_page', [RegisteredUserController::class, 'create'])->name('register.page');
+Route::post('/register_page', [RegisteredUserController::class, 'store'])->name('register.store'); // Added missing route
 
 Route::middleware('auth')->group(function () {
     Route::get('/password/change', [PasswordChangeController::class, 'showForm'])->name('password.change.form');
@@ -30,14 +31,18 @@ Route::middleware(['auth', 'password.check'])->group(function () {
 
     // 🔓 Accessible by both Admin and Member
     Route::get('/dentists', [DentistController::class, 'index'])->name('dentists.index');
+    
+    // 👤 Dedicated Member Profile Photo Update Route
+    Route::put('/member/photo/update', [DentistController::class, 'updatePhoto'])->name('member.update-photo');
 
     // 🔒 STRICT ADMIN LOCKDOWN GROUP
     Route::middleware('admin')->group(function () {
-        Route::get('/admin/register', [RegisteredUserController::class, 'create'])->name('register');
-        Route::post('/admin/register', [RegisteredUserController::class, 'store']);
+        Route::get('/admin/register', [RegisteredUserController::class, 'createAdmin'])->name('admin.register.form');
+        Route::post('/admin/register', [RegisteredUserController::class, 'storeAdmin'])->name('admin.register.store');
 
         Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
         Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
+        Route::post('/dentists/import', [DentistController::class, 'import'])->name('dentists.import');
         Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
 
         Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');

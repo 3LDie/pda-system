@@ -2,7 +2,7 @@
 
 namespace App\Mail;
 
-use App\Models\User; // 👈 Explicitly imported to declare proper typehinting
+use App\Models\User; 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
@@ -15,7 +15,6 @@ class WelcomeMemberMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    // 💡 Declared public fields so they are automatically made accessible inside the Blade template view context
     public $user;
     public $temporaryPassword;
 
@@ -44,7 +43,10 @@ class WelcomeMemberMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.welcome', // 👈 Pointed directly to your custom layout file
+            view: 'emails.welcome', // Matches your custom layout view file
+            with: [
+                'logoPath' => public_path('images/pda_logo.jpg'),
+            ],
         );
     }
 
