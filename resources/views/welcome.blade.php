@@ -60,6 +60,7 @@ if (auth()->check()) {
     </header>
 
 
+
 </div>
 <!-- Main Content Section -->
 <main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 w-full overflow-hidden">
@@ -78,6 +79,24 @@ if (auth()->check()) {
     <div class="relative z-10">
 
         <!-- Heading -->
+
+    <!-- Main Content Section -->
+<main class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-16 w-full overflow-hidden">
+
+    <!-- Transparent Background Logo -->
+    <div class="absolute inset-0 flex justify-center items-center pointer-events-none z-0">
+        <img
+            src="{{ asset('images/pda_logo.jpg') }}"
+            alt=""
+            class="w-[600px] max-w-[70vw] opacity-20 object-contain"
+        >
+    </div>
+
+    <!-- All Content -->
+    <div class="relative z-10">
+
+        <!-- Heading Section -->
+ (Update landing page design and add backgorund logo)
         <div class="text-center max-w-3xl mx-auto mb-16">
 
             <span class="inline-block px-3.5 py-1 text-xs font-semibold tracking-wider
@@ -102,22 +121,36 @@ if (auth()->check()) {
 
         </div>
 
-        <!-- Portal Navigation Cards -->
+        <!-- Portal Cards -->
         <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+
 
             <!-- Admin Portal -->
             <div class="bg-white dark:bg-slate-900
                         rounded-2xl border border-slate-200/80 dark:border-slate-800
+
+            <!-- Administrator Card -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl
+                        border border-slate-200/80 dark:border-slate-800
+ (Update landing page design and add backgorund logo)
                         shadow-sm p-8 flex flex-col justify-between
                         hover:shadow-md transition">
 
                 <div>
+
                     <div class="w-12 h-12
                                 bg-purple-50 dark:bg-purple-950/50
                                 text-purple-700 dark:text-purple-300
                                 rounded-xl flex items-center justify-center
                                 font-bold text-xl mb-6 shadow-inner
                                 border border-purple-100 dark:border-purple-900">
+
+                    <div class="w-12 h-12 bg-purple-50 dark:bg-purple-950/50
+                                text-purple-700 dark:text-purple-300 rounded-xl
+                                flex items-center justify-center font-bold text-xl
+                                mb-6 shadow-inner border border-purple-100
+                                dark:border-purple-900">
+(Update landing page design and add backgorund logo)
                         🛡️
                     </div>
 
@@ -136,25 +169,44 @@ if (auth()->check()) {
                    class="w-full text-center py-3 px-4
                           bg-slate-900 dark:bg-slate-800
                           hover:bg-slate-800 dark:hover:bg-slate-700
+
                           text-white font-medium rounded-xl transition shadow-sm">
+
+                          text-white font-medium rounded-xl
+                          transition shadow-sm">
+ (Update landing page design and add backgorund logo)
                     Access Admin Portal
                 </a>
 
             </div>
 
+
             <!-- Member Portal -->
             <div class="bg-white dark:bg-slate-900
                         rounded-2xl border border-slate-200/80 dark:border-slate-800
+
+            <!-- Member Card -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl
+                        border border-slate-200/80 dark:border-slate-800
+ (Update landing page design and add backgorund logo)
                         shadow-sm p-8 flex flex-col justify-between
                         hover:shadow-md transition">
 
                 <div>
+
                     <div class="w-12 h-12
                                 bg-emerald-50 dark:bg-emerald-950/50
                                 text-emerald-600 dark:text-emerald-400
                                 rounded-xl flex items-center justify-center
                                 font-bold text-xl mb-6 shadow-inner
                                 border border-emerald-100 dark:border-emerald-900">
+
+                    <div class="w-12 h-12 bg-emerald-50 dark:bg-emerald-950/50
+                                text-emerald-600 dark:text-emerald-400 rounded-xl
+                                flex items-center justify-center font-bold text-xl
+                                mb-6 shadow-inner border border-emerald-100
+                                dark:border-emerald-900">
+ (Update landing page design and add backgorund logo)
                         🦷
                     </div>
 
@@ -172,7 +224,12 @@ if (auth()->check()) {
                 <a href="{{ route('member.login') }}"
                    class="w-full text-center py-3 px-4
                           bg-purple-700 hover:bg-purple-800
+
                           text-white font-medium rounded-xl transition shadow-sm">
+
+                          text-white font-medium rounded-xl
+                          transition shadow-sm">
+ (Update landing page design and add backgorund logo)
                     Access Member Portal
                 </a>
 
