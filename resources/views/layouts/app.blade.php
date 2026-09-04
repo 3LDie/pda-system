@@ -26,6 +26,21 @@
             })();
         </script>
 
+        <script>
+            (function () {
+                const storageKey = 'pda-theme';
+                const storedTheme = localStorage.getItem(storageKey);
+                const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                const theme = storedTheme === 'dark' || storedTheme === 'light'
+                    ? storedTheme
+                    : (prefersDark ? 'dark' : 'light');
+
+                document.documentElement.classList.toggle('dark', theme === 'dark');
+                document.documentElement.setAttribute('data-theme', theme);
+                document.documentElement.style.colorScheme = theme;
+            })();
+        </script>
+
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- Theme Initialization Script to Prevent Flash -->
@@ -41,11 +56,25 @@
         $isDentistPage = request()->routeIs('dentists.*');
     @endphp
     <body class="font-sans antialiased" data-dentist-mode="{{ $isDentistPage ? '1' : '0' }}">
+<<<<<<< .merge_file_JP3AOQ
+=======
+
+        <div class="min-h-screen bg-gray-100 text-gray-900 transition-colors duration-200 dark:bg-gray-800 dark:text-gray-100">
+            @include('layouts.navigation')
+
+            @isset($header)
+                <header class="bg-white shadow dark:bg-gray-700 dark:border-b dark:border-gray-600 dark:text-gray-100">
+
+>>>>>>> .merge_file_790IC6
         <div class="min-h-screen bg-gray-100 dark:bg-[#030616] text-slate-900 dark:text-slate-100 transition-colors duration-200">
             @include('layouts.navigation')
 
             @isset($header)
                 <header class="shadow bg-white dark:bg-[#030616] border-b border-gray-200 dark:border-purple-900/40 text-gray-800 dark:text-slate-100 transition-colors duration-200">
+<<<<<<< .merge_file_JP3AOQ
+=======
+ (Update layout theme switching and support for light/dark mode across dashboard and dentist directory)
+>>>>>>> .merge_file_790IC6
                     <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                         {{ $header }}
                     </div>

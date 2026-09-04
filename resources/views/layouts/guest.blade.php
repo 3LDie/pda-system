@@ -1,9 +1,15 @@
 <!DOCTYPE html>
+<<<<<<< .merge_file_Lh4XhB
  
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-force-theme="light">
 
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" :class="{ 'dark': darkMode }">
  
+=======
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-force-theme="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" :class="{ 'dark': darkMode }">
+ (Decouple n8n webhook and switch to native Brevo SMTP mailer)
+>>>>>>> .merge_file_KiE3CV
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">

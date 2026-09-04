@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-<nav x-data="{ open: false }" class="bg-white dark:bg-gray-700 border-b border-gray-100 dark:border-gray-600">
-=======
 <nav x-data="{ open: false, darkMode: document.documentElement.classList.contains('dark') }" class="bg-white dark:bg-[#030616] border-b border-gray-200 dark:border-purple-900/40 transition-colors duration-200">
->>>>>>> 280f1b96294799ae6a50a158e89c56a3eb4577c0
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             <div class="flex">
