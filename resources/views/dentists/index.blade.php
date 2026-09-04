@@ -70,35 +70,38 @@
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div class="bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 overflow-hidden shadow-xl sm:rounded-2xl p-6 border border-gray-200 dark:border-purple-900/40 transition-colors duration-200">
                 
-                <div class="flex flex-col md:flex-row md:items-center md:justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-6 gap-4">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between border-b border-gray-100 dark:border-gray-800 pb-4 mb-6 gap-4">
                     <div>
                         <h3 class="text-lg font-medium text-gray-900 dark:text-gray-100">Registry Records</h3>
                         <p class="text-sm text-gray-500 dark:text-gray-400">Manage local PDA chapter rows and trace automated multi-year membership statuses.</p>
                     </div>
-                    <div class="flex flex-wrap items-center gap-3">
+                    
+                    <div class="flex flex-wrap items-center gap-2.5">
                         @if(auth()->user()->role === 'admin')
                             <a href="{{ route('admin.register.form') }}" 
-                               class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition duration-150 ease-in-out">
-                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                               class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                                <svg class="-ml-1 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M18 7.5v3m0 0v3m0-3h3m-3 0h-3m-2.25-4.125a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0zM3 19.235v-.11a6.375 6.375 0 0 1 12.75 0v.109A12.318 12.318 0 0 1 9.374 21c-2.331 0-4.512-.645-6.374-1.766z" />
                                 </svg>
-                                Add System Admin
+                                Add Admin
                             </a>
 
                             <button onclick="document.getElementById('csvImportModal').classList.remove('hidden')"
-                                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
-                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                    class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                                <svg class="-ml-1 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 Import CSV
                             </button>
                         @endif
 
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
-                           class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
-                            Export Roster (CSV)
+                           class="inline-flex items-center px-3.5 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                            <svg class="-ml-1 mr-1.5 h-4 w-4 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                            Export CSV
                         </a>
+
                         <a href="{{ route('dentists.create') }}" 
                            class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[#5045EB] dark:bg-purple-600 hover:bg-[#3c37d2] dark:hover:bg-purple-700 focus:outline-none transition">
-                            Register New Dentist
+                            + Register Dentist
                         </a>
                     </div>
                 </div>
