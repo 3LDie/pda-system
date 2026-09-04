@@ -19,9 +19,9 @@ class DashboardController extends Controller
             return redirect()->route('login');
         }
 
-        // 2. Admin-specific dashboard check
+        // 2. Admin-specific dashboard check (pointing to 'dashboard' to prevent missing view errors)
         if ($user->role === 'admin') {
-            return view('admin.dashboard', [
+            return view('dashboard', [
                 'role' => 'admin'
             ]);
         }
