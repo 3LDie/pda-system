@@ -164,6 +164,98 @@ class DentistController extends Controller
         }
     }
 
+    public function import(Request $request)
+    {
+        $request->validate([
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+        ]);
+
+        $file = $request->file('csv_file');
+        $path = $file->getRealPath();
+
+        $handle = fopen($path, 'r');
+        if ($handle === false) {
+            return back()->withErrors(['csv_file' => 'Failed to read the uploaded CSV file.']);
+        }
+
+        $header = fgetcsv($handle, 1000, ',');
+        if ($header === false) {
+            fclose($handle);
+            return back()->withErrors(['csv_file' => 'The CSV file is empty.']);
+        }
+
+        $header = array_map(function($item) {
+            return strtolower(trim(preg_replace('/[\x{FEFF}]/u', '', $item)));
+        }, $header);
+
+        $importedCount = 0;
+        DB::beginTransaction();
+
+        try {
+            while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+                if (count($row) < count($header)) {
+                    continue; 
+                }
+                $data = array_combine($header, $row);
+
+                $fullName = $data['full_name'] ?? $data['name'] ?? null;
+                $email = $data['email_address'] ?? $data['email'] ?? null;
+                $prcNo = $data['prc_no'] ?? $data['prc_number'] ?? null;
+
+                if (!$fullName || !$email || !$prcNo) {
+                    continue; 
+                }
+
+                $existingUser = User::where('email', $email)->first();
+                if ($existingUser) {
+                    continue; 
+                }
+
+                $user = User::create([
+                    'name' => $fullName,
+                    'email' => $email,
+                    'password' => Hash::make('password123'),
+                    'role' => 'member',
+                ]);
+
+                $profileId = DB::table('dentist_profiles')->insertGetId([
+                    'user_id' => $user->id,
+                    'full_name' => $fullName,
+                    'extension' => $data['extension'] ?? null,
+                    'prc_no' => $prcNo,
+                    'date_of_birth' => !empty($data['date_of_birth']) ? date('Y-m-d', strtotime($data['date_of_birth'])) : '1990-01-01',
+                    'contact_no' => $data['contact_no'] ?? $data['contact'] ?? 'N/A',
+                    'email_address' => $email,
+                    'home_address' => $data['home_address'] ?? 'N/A',
+                    'clinic_address' => $data['clinic_address'] ?? 'N/A',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                if (!empty($data['membership_year'])) {
+                    DB::table('pda_memberships')->insert([
+                        'dentist_profile_id' => $profileId,
+                        'membership_year' => $data['membership_year'],
+                        'status' => $data['payment_status'] ?? 'Active',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $importedCount++;
+            }
+
+            fclose($handle);
+            DB::commit();
+
+            return redirect()->route('dentists.index')->with('success', "Successfully imported {$importedCount} dentist records from CSV.");
+        } catch (\Exception $e) {
+            fclose($handle);
+            DB::rollBack();
+            return back()->withErrors(['csv_file' => 'Import error: ' . $e->getMessage()]);
+        }
+    }
+
     public function edit($id)
     {
         $dentist = User::where('role', 'member')

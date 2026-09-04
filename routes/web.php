@@ -41,6 +41,7 @@ Route::middleware(['auth', 'password.check'])->group(function () {
 
         Route::get('/dentists/create', [DentistController::class, 'create'])->name('dentists.create');
         Route::get('/dentists/export', [DentistController::class, 'export'])->name('dentists.export');
+        Route::post('/dentists/import', [DentistController::class, 'import'])->name('dentists.import');
         Route::post('/dentists', [DentistController::class, 'store'])->name('dentists.store');
 
         Route::get('/dentists/{id}/edit', [DentistController::class, 'edit'])->name('dentists.edit');
