@@ -84,6 +84,12 @@
                                 </svg>
                                 Add System Admin
                             </a>
+
+                            <button onclick="document.getElementById('csvImportModal').classList.remove('hidden')"
+                                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-700 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none transition">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Import CSV
+                            </button>
                         @endif
 
                         <a :href="'{{ route('dentists.export') }}' + (search ? '?search=' + encodeURIComponent(search) : '')" 
@@ -201,6 +207,27 @@
                 </div>
 
             </div>
+        </div>
+    </div>
+
+    <!-- CSV Import Modal Window -->
+    <div id="csvImportModal" class="hidden fixed inset-0 z-50 overflow-y-auto bg-gray-900 bg-opacity-60 flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg max-w-md w-full p-6 shadow-xl text-gray-900 dark:text-gray-100">
+            <h3 class="text-lg font-medium mb-2">Import Dentist Roster (CSV)</h3>
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Upload a CSV file containing columns like: <code>full_name, email_address, prc_no, contact_no, home_address, clinic_address, membership_year, payment_status</code>.</p>
+            
+            <form action="{{ route('dentists.import') }}" method="POST" enctype="multipart/form-data" class="space-y-4">
+                @csrf
+                <div>
+                    <input type="file" name="csv_file" accept=".csv, .txt" required class="block w-full text-sm text-gray-500 dark:text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 dark:file:bg-gray-800 file:text-indigo-700 dark:file:text-indigo-400 hover:file:bg-indigo-100">
+                    @error('csv_file') <p class="text-red-500 text-xs mt-1">{{ $message }}</p> @enderror
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button type="button" onclick="document.getElementById('csvImportModal').classList.add('hidden')" class="px-4 py-2 border border-gray-300 dark:border-gray-700 text-sm rounded-md text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 hover:bg-gray-50">Cancel</button>
+                    <button type="submit" class="px-4 py-2 bg-purple-600 text-white text-sm rounded-md hover:bg-purple-700">Upload & Import</button>
+                </div>
+            </form>
         </div>
     </div>
 </x-app-layout>
