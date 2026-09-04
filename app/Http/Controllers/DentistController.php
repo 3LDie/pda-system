@@ -97,7 +97,6 @@ class DentistController extends Controller
             'payment_status' => 'required|string',
         ]);
 
-        // Automatically convert middle name to middle initial and format name
         $rawName = trim($validated['full_name']);
         $parts = array_map('trim', explode(',', $rawName));
         
@@ -166,8 +165,10 @@ class DentistController extends Controller
 
     public function import(Request $request)
     {
+        set_time_limit(120); // Extend execution time for large rosters
+
         $request->validate([
-            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:2048'],
+            'csv_file' => ['required', 'file', 'mimes:csv,txt', 'max:5120'],
         ]);
 
         $file = $request->file('csv_file');
@@ -178,15 +179,22 @@ class DentistController extends Controller
             return back()->withErrors(['csv_file' => 'Failed to read the uploaded CSV file.']);
         }
 
-        $header = fgetcsv($handle, 1000, ',');
-        if ($header === false) {
-            fclose($handle);
-            return back()->withErrors(['csv_file' => 'The CSV file is empty.']);
+        $header = null;
+        while (($row = fgetcsv($handle, 1000, ',')) !== false) {
+            $rowLower = array_map(fn($item) => strtolower(trim(preg_replace('/[\x{FEFF}]/u', '', $item))), $row);
+            if (in_array('surname', $rowLower) || in_array('prc number', $rowLower)) {
+                $header = $rowLower;
+                break;
+            }
         }
 
-        $header = array_map(function($item) {
-            return strtolower(trim(preg_replace('/[\x{FEFF}]/u', '', $item)));
-        }, $header);
+        if (!$header) {
+            fclose($handle);
+            return back()->withErrors(['csv_file' => 'Could not find valid column headers (SURNAME, PRC NUMBER) in the CSV file.']);
+        }
+
+        // Hash the default password ONCE outside the loop to prevent timeouts
+        $defaultPasswordHash = Hash::make('password123');
 
         $importedCount = 0;
         DB::beginTransaction();
@@ -198,45 +206,77 @@ class DentistController extends Controller
                 }
                 $data = array_combine($header, $row);
 
-                $fullName = $data['full_name'] ?? $data['name'] ?? null;
-                $email = $data['email_address'] ?? $data['email'] ?? null;
-                $prcNo = $data['prc_no'] ?? $data['prc_number'] ?? null;
-
-                if (!$fullName || !$email || !$prcNo) {
+                $surname = trim($data['surname'] ?? '');
+                $givenName = trim($data['given name'] ?? $data['given nam'] ?? '');
+                $middleInitial = trim($data['middle initial'] ?? $data['middle ini'] ?? '');
+                
+                if (empty($surname) || empty($givenName)) {
                     continue; 
                 }
 
-                $existingUser = User::where('email', $email)->first();
-                if ($existingUser) {
+                $fullName = $surname . ', ' . $givenName;
+                if (!empty($middleInitial)) {
+                    $initialLetter = strtoupper(substr($middleInitial, 0, 1));
+                    $fullName .= ' ' . $initialLetter . '.';
+                }
+
+                $prcNo = trim($data['prc number'] ?? $data['prc numb'] ?? $data['prc_no'] ?? null);
+                if (!$prcNo || $prcNo === '0') {
                     continue; 
                 }
+
+                $existingProfile = DB::table('dentist_profiles')->where('prc_no', $prcNo)->first();
+                if ($existingProfile) {
+                    continue; 
+                }
+
+                $email = 'dentist_' . preg_replace('/[^0-9]/', '', $prcNo) . '@pda.local';
 
                 $user = User::create([
                     'name' => $fullName,
                     'email' => $email,
-                    'password' => Hash::make('password123'),
+                    'password' => $defaultPasswordHash,
                     'role' => 'member',
                 ]);
 
                 $profileId = DB::table('dentist_profiles')->insertGetId([
                     'user_id' => $user->id,
                     'full_name' => $fullName,
-                    'extension' => $data['extension'] ?? null,
                     'prc_no' => $prcNo,
-                    'date_of_birth' => !empty($data['date_of_birth']) ? date('Y-m-d', strtotime($data['date_of_birth'])) : '1990-01-01',
-                    'contact_no' => $data['contact_no'] ?? $data['contact'] ?? 'N/A',
+                    'date_of_birth' => '1990-01-01',
+                    'contact_no' => $data['contact no.'] ?? $data['contact_no'] ?? 'N/A',
                     'email_address' => $email,
-                    'home_address' => $data['home_address'] ?? 'N/A',
-                    'clinic_address' => $data['clinic_address'] ?? 'N/A',
+                    'home_address' => 'N/A',
+                    'clinic_address' => 'N/A',
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
 
-                if (!empty($data['membership_year'])) {
+                // Scan historical columns for year-based payments (e.g., "2017 - 18")
+                foreach ($header as $originalHeaderName) {
+                    $lowerHeader = strtolower(trim($originalHeaderName));
+                    if (preg_match('/(20\d{2}\s*-\s*\d{2,4})/', $lowerHeader, $matches)) {
+                        $rawYear = trim($matches[1]);
+                        $cellValue = trim($data[strtolower($originalHeaderName)] ?? '');
+
+                        if (!empty($cellValue) && $cellValue !== '0' && !str_contains($cellValue, '###')) {
+                            DB::table('pda_memberships')->insertOrIgnore([
+                                'dentist_profile_id' => $profileId,
+                                'membership_year' => $rawYear,
+                                'status' => 'Active (Ref: ' . $cellValue . ')',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
+                }
+
+                $hasMemberships = DB::table('pda_memberships')->where('dentist_profile_id', $profileId)->exists();
+                if (!$hasMemberships) {
                     DB::table('pda_memberships')->insert([
                         'dentist_profile_id' => $profileId,
-                        'membership_year' => $data['membership_year'],
-                        'status' => $data['payment_status'] ?? 'Active',
+                        'membership_year' => '2026-27',
+                        'status' => 'Active',
                         'created_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -248,7 +288,7 @@ class DentistController extends Controller
             fclose($handle);
             DB::commit();
 
-            return redirect()->route('dentists.index')->with('success', "Successfully imported {$importedCount} dentist records from CSV.");
+            return redirect()->route('dentists.index')->with('success', "Successfully imported {$importedCount} dentist records with historical memberships from CSV.");
         } catch (\Exception $e) {
             fclose($handle);
             DB::rollBack();
@@ -288,7 +328,6 @@ class DentistController extends Controller
             'payment_status' => 'sometimes|required|string',
         ]);
 
-        // Automatically convert middle name to middle initial and format name
         $rawName = trim($validated['full_name']);
         $parts = array_map('trim', explode(',', $rawName));
         
