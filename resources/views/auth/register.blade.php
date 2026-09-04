@@ -1,8 +1,14 @@
 <x-guest-layout>
+
+<div class="relative">
+
+    
     <div class="mb-4 text-center">
-        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-purple-600 text-white mb-2 shadow-md">
-            <span class="font-bold text-lg">PDA</span>
-        </div>
+        <img
+             src="{{ asset('images/pda_logo.jpg') }}"
+            alt="PDA Logo"
+            class="w-16 h-16 mx-auto rounded-full object-cover shadow-md border border-purple-200 mb-3"
+>
         <h2 class="text-xl font-bold text-gray-900 dark:text-white">
             {{ request()->is('admin/*') ? __('Register System Admin') : __('Member Registration') }}
         </h2>

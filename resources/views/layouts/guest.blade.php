@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" data-force-theme="light">
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}" x-data="{ darkMode: localStorage.getItem('darkMode') === 'true' }" x-init="$watch('darkMode', val => localStorage.setItem('darkMode', val))" :class="{ 'dark': darkMode }">
- (Decouple n8n webhook and switch to native Brevo SMTP mailer)
+
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -32,14 +31,21 @@
             </button>
         </div>
 
-        <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0">
+        <div class="min-h-screen relative flex flex-col sm:justify-center items-center pt-6 sm:pt-0 overflow-hidden">
+
+    <!-- Background Logo -->
+    <img
+        src="{{ asset('images/pda_logo.jpg') }}"
+        alt=""
+        class="absolute w-[700px] opacity-15 pointer-events-none"
+    >
             <div>
                 <a href="/">
                     <!-- Optional logo header slot -->
                 </a>
             </div>
 
-            <div class="w-full sm:max-w-md mt-6 px-6 py-8 bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden sm:rounded-2xl transition-colors duration-200">
+            <div class="relative z-10 w-full sm:max-w-md mt-6 px-6 py-8 bg-white dark:bg-slate-900 shadow-sm border border-slate-200 dark:border-slate-800 overflow-hidden sm:rounded-2xl transition-colors duration-200">
                 {{ $slot }}
             </div>
         </div>
